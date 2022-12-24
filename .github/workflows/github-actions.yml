@@ -1,0 +1,31 @@
+name: GitHub Actions 
+run-name: ${{ github.actor }} is pushing to main branch 🚀
+on:
+  push: 
+    branches: [ main ]
+  pull-request: 
+    branches: [ main ]
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    strategy: 
+      matrix:
+        node-version: [ 17.x ]
+    steps: 
+      - uses: actions/checkout@v3
+      - name: Starting Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: install modules
+        run: npm install
+      - name: build project
+        run: npm run build
+      - name: unit tests
+        run: npm run test
+      - name: e2e tests
+        run: npm run test:e2e
+      - name: lint tests
+        run: npm run lint
+      - name: applying prettier
+        run: npm run pretty
