@@ -26,4 +26,4 @@ jobs:
       - name: lint tests
         run: npm run lint
       - name: applying prettier
-        run: npm run pretty
+        run: npm run format
