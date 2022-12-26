@@ -27,23 +27,37 @@ enum QuestTypeEnum {
 }
 
 model Person {
-  user_id          Int             @id @default(autoincrement())
-  uuid             String          @unique
-  login            String          @unique
+  user_id Int @id @default(autoincrement())
+
+  uuid             String    @unique
+  login            String    @unique
   password         String
-  email            String          @unique
-  isEmailConfirmed Boolean?        @default(false)
+  email            String    @unique
+  isEmailConfirmed Boolean   @default(false)
   dateOfBirth      DateTime?
-  roles            RolesOnUsers[]  @relation(name: "user_has_roles")
-  assignedRoles    RolesOnUsers[]  @relation(name: "role_is_assigned_by_user")
-  tokens           Token[]         @relation(name: "user_has_tokens")
-  preferences      Preference[]    @relation(name: "user_has_preferences")
-  tasks            Task[]          @relation(name: "user_has_tasks")
-  quests           QuestsOnUsers[] @relation(name: "user_has_quests")
-  createdQuests    Quest[]         @relation(name: "user_creates_quests")
+
+  emailConfirmLink EmailConfirmLink? @relation(name: "user_has_email_confirmation_link")
+  roles            RolesOnUsers[]    @relation(name: "user_has_roles")
+  assignedRoles    RolesOnUsers[]    @relation(name: "role_is_assigned_by_user")
+  tokens           Token[]           @relation(name: "user_has_tokens")
+  preferences      Preference[]      @relation(name: "user_has_preferences")
+  tasks            Task[]            @relation(name: "user_has_tasks")
+  quests           QuestsOnUsers[]   @relation(name: "user_has_quests")
+  createdQuests    Quest[]           @relation(name: "user_creates_quests")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model EmailConfirmLink {
+  emailConfirmLink_id Int @id @default(autoincrement())
+
+  user   Person @relation(fields: [userId], references: [user_id], name: "user_has_email_confirmation_link")
+  userId Int    @unique
+
+  link String @unique
+
+  createdAt DateTime @default(now())
 }
 
 model Role {
