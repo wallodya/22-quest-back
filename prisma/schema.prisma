@@ -10,16 +10,181 @@ datasource db {
   provider = "postgresql"
 }
 
+enum RoleEnum {
+  USER
+  ADMIN
+}
+
+enum TaskTypeEnum {
+  BASIC
+  PERIODIC
+  TIMER
+}
+
+enum QuestTypeEnum {
+  BASIC
+  CONTINIOUS
+}
+
 model Person {
-  user_id            Int      @id @default(autoincrement())
-  uuid               String @unique
-  login              String @unique
-  password           String
-  email              String 
-  isEmailConfirmed   Boolean? @default(false)
-  dateOfBirth        DateTime?
-  hasPreferencesSync Boolean? @default(false)
+  user_id          Int             @id @default(autoincrement())
+  uuid             String          @unique
+  login            String          @unique
+  password         String
+  email            String          @unique
+  isEmailConfirmed Boolean?        @default(false)
+  dateOfBirth      DateTime?
+  roles            RolesOnUsers[]  @relation(name: "user_has_roles")
+  assignedRoles    RolesOnUsers[]  @relation(name: "role_is_assigned_by_user")
+  tokens           Token[]         @relation(name: "user_has_tokens")
+  preferences      Preference[]    @relation(name: "user_has_preferences")
+  tasks            Task[]          @relation(name: "user_has_tasks")
+  quests           QuestsOnUsers[] @relation(name: "user_has_quests")
+  createdQuests    Quest[]         @relation(name: "user_creates_quests")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          Int            @id @default(autoincrement())
+  roleName    RoleEnum
+  description String
+  users       RolesOnUsers[] @relation(name: "role_is_assigned_to_user")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model RolesOnUsers {
+  rolesOnnUsers_id Int    @id @default(autoincrement())
+  user             Person @relation(fields: [userId], references: [user_id], name: "user_has_roles")
+  userId           Int
+  role             Role   @relation(fields: [roleId], references: [id], name: "role_is_assigned_to_user")
+  roleId           Int
+
+  assignedBy   Person   @relation(fields: [assignedById], references: [user_id], name: "role_is_assigned_by_user")
+  assignedById Int
+  assignedAt   DateTime @default(now())
+
+  @@unique([userId, roleId], name: "user_role")
+}
+
+model Token {
+  token_id    Int    @id @default(autoincrement())
+  user        Person @relation(fields: [userId], references: [user_id], name: "user_has_tokens")
+  userId      Int
+  refeshToken String
+  ip          String
+  userAgent   String
+
+  createdAt DateTime @default(now())
+}
+
+model Preference {
+  preference_id      Int     @id @default(autoincrement())
+  user               Person  @relation(fields: [userId], references: [user_id], name: "user_has_preferences")
+  userId             Int
+  hasPreferencesSync Boolean
+  hasDarkMode        Boolean
+  // TODO
+
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+model Task {
+  task_id      Int     @id @default(autoincrement())
+  user         Person  @relation(fields: [userId], references: [user_id], name: "user_has_tasks")
+  userId       Int
+  uniqueTaskId String  @unique
+  isCompleted  Boolean @default(false)
+  title        String
+  text         String?
+
+  types      TaskTypeOnTask[] @relation(name: "task_has_types")
+  startTime  DateTime?
+  endTime    DateTime?
+  priority   Int              @default(2)
+  difficulty Int              @default(2)
+
+  isInQuest        Boolean  @default(false)
+  quest            Quest    @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")
+  questId          Int
+  isCurrentInQuest Boolean?
+
+  @@unique([userId, title], name: "user_task_title")
+}
+
+model TaskType {
+  taskType_id Int              @id @default(autoincrement())
+  typeName    TaskTypeEnum     @unique
+  description String           @unique
+  tasks       TaskTypeOnTask[] @relation(name: "task_type_is_assigned_to_tasks")
+
+  createdat DateTime
+  updatedAt DateTime
+}
+
+model TaskTypeOnTask {
+  taskTypeOnTask_id Int      @id @default(autoincrement())
+  task              Task     @relation(fields: [taskId], references: [task_id], name: "task_has_types")
+  taskId            Int
+  type              TaskType @relation(fields: [taskTypeId], references: [taskType_id], name: "task_type_is_assigned_to_tasks")
+  taskTypeId        Int
+
+  @@unique([taskId, taskTypeId], name: "task_type")
+}
+
+model Quest {
+  quest_id      Int                 @id @default(autoincrement())
+  uniqueQuestId String              @unique
+  title         String
+  description   String
+  type          QuestTypeOnQuests[] @relation(name: "quest_has_types")
+  isStarted     Boolean             @default(false)
+  isCompleted   Boolean             @default(false)
+  tasks         Task[]              @relation(name: "quest_consists_of_tasks")
+  owner         QuestsOnUsers[]     @relation(name: "quest_belongs_to_users")
+  author        Person              @relation(fields: [authorId], references: [user_id], "user_creates_quests")
+  authorId      Int
+
+  createdAt DateTime
+  updatedAt DateTime
+  startedAt DateTime
+
+  @@unique([authorId, title], name: "quest_title")
+}
+
+model QuestType {
+  questType_id Int          @id @default(autoincrement())
+  typeName     TaskTypeEnum @unique
+  description  String       @unique
+
+  quests QuestTypeOnQuests[] @relation(name: "quest_type_is_assigned_to_quests")
+
+  createdat DateTime
+  updatedAt DateTime
+}
+
+model QuestTypeOnQuests {
+  questTypeOnQuest_id Int       @id @default(autoincrement())
+  questType           QuestType @relation(fields: [questTypeId], references: [questType_id], name: "quest_type_is_assigned_to_quests")
+  questTypeId         Int
+  quest               Quest     @relation(fields: [questId], references: [quest_id], name: "quest_has_types")
+  questId             Int
+
+  @@unique([questId, questTypeId], name: "quest_type")
+}
+
+model QuestsOnUsers {
+  questOnUsers_id Int    @id @default(autoincrement())
+  user            Person @relation(fields: [userId], references: [user_id], name: "user_has_quests")
+  userId          Int
+  quest           Quest  @relation(fields: [questId], references: [quest_id], name: "quest_belongs_to_users")
+  questId         Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, questId], name: "user_quest")
 }
