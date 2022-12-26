@@ -3,7 +3,7 @@ import { INestApplication } from "@nestjs/common";
 import * as request from "supertest";
 import { AppModule } from "./../src/app.module";
 
-describe("All endpoints are defined and return response (e2e)", () => {
+describe("All endpoints are defined (e2e)", () => {
     let app: INestApplication;
 
     beforeEach(async () => {
@@ -23,8 +23,22 @@ describe("All endpoints are defined and return response (e2e)", () => {
         return request(app.getHttpServer()).post("/auth/login").expect(201);
     });
 
+    it("/auth/logout (POST)", () => {
+        return request(app.getHttpServer()).post("/auth/logout").expect(201);
+    });
+
     it("/auth/register (POST)", () => {
         return request(app.getHttpServer()).post("/auth/register").expect(201);
+    });
+
+    it("/auth/refresh (GET)", () => {
+        return request(app.getHttpServer()).get("/auth/refresh").expect(200);
+    });
+
+    it("/auth/activate (GET)", () => {
+        return request(app.getHttpServer())
+            .get("/auth/activate/:confirmCode")
+            .expect(200);
     });
 
     it("/task (POST)", () => {
