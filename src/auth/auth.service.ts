@@ -1,7 +1,16 @@
-import { Injectable } from "@nestjs/common";
+import {
+    HttpException,
+    HttpStatus,
+    Injectable,
+    UnauthorizedException,
+} from "@nestjs/common";
 import { Person } from "@prisma/client";
+import * as bcrypt from "bcrypt";
+import { UserService } from "../user/user.service";
+import { v4 as uuidv4 } from "uuid";
 import LoginDto from "./dto/loginDto";
 import RegisterDto from "./dto/registerDto";
+import { JwtService } from "@nestjs/jwt";
 
 const testUser = {
     uuid: "123",
@@ -15,6 +24,11 @@ const testUser = {
 
 @Injectable()
 export class AuthService {
+    constructor(
+        private userServive: UserService,
+        private jwtService: JwtService,
+    ) {}
+
     async login(dto: LoginDto) {
         const user = await this.validateUser(dto);
         return this.generateToken(user);
@@ -25,8 +39,37 @@ export class AuthService {
     }
 
     async register(dto: RegisterDto) {
-        const user = testUser;
-        return this.generateToken(user);
+        const isLoginTaken = !!(await this.userServive.getUserByLogin(
+            dto.login,
+        ));
+        const isEmailTaken = !!(await this.userServive.getUserByEmail(
+            dto.email,
+        ));
+
+        if (isLoginTaken) {
+            throw new HttpException(
+                "User with this login already exists",
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        if (isEmailTaken) {
+            throw new HttpException(
+                "User with this email already exists",
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        const hashedPassword = await bcrypt.hash(dto.password, 5);
+        const uuid = uuidv4();
+
+        const newUser = await this.userServive.createUser({
+            ...dto,
+            password: hashedPassword,
+            uuid: uuid,
+        });
+
+        return this.generateToken(newUser);
     }
 
     async refresh(token: string) {
@@ -38,10 +81,21 @@ export class AuthService {
     }
 
     private async validateUser(dto: LoginDto) {
-        return testUser;
+        const user = await this.userServive.getUserByEmail(dto.email);
+        const isPasswordCorrect = await bcrypt.compare(
+            dto.password,
+            user.password,
+        );
+
+        if (user && isPasswordCorrect) {
+            delete user.password;
+            return user;
+        }
+
+        throw new UnauthorizedException({ message: "Wrong email or password" });
     }
 
     private async generateToken(user: Omit<Person, "user_id" | "password">) {
-        return { token: "testToken" };
+        return this.jwtService.sign(user);
     }
 }

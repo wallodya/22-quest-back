@@ -1,11 +1,12 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Person, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma.service";
 
 const fieldsToSelect = {
     uuid: true,
     login: true,
     email: true,
+    password: true,
     isEmailConfirmed: true,
     dateOfBirth: true,
     createdAt: true,
@@ -22,31 +23,25 @@ export class UserService {
     }
 
     async getUserByLogin(login: string) {
-        const user = await this.prismaService.person.findUnique({
+        const user = await this.prismaService.person.findFirst({
             where: { login: login },
             select: fieldsToSelect,
         });
 
         if (!user) {
-            throw new HttpException(
-                "User with this login doesn't exist found",
-                HttpStatus.NOT_FOUND,
-            );
+            return null;
         }
 
         return user;
     }
     async getUserByEmail(email: string) {
-        const user = await this.prismaService.person.findUnique({
+        const user = await this.prismaService.person.findFirst({
             where: { email: email },
             select: fieldsToSelect,
         });
 
         if (!user) {
-            throw new HttpException(
-                "User with this login doesn't exist found",
-                HttpStatus.NOT_FOUND,
-            );
+            return null;
         }
 
         return user;
@@ -58,20 +53,22 @@ export class UserService {
         });
 
         if (!user) {
-            throw new HttpException(
-                "User with this login doesn't exist found",
-                HttpStatus.NOT_FOUND,
-            );
+            return null;
         }
 
         return user;
     }
 
     async createUser(candidate: Prisma.PersonCreateInput) {
-        return;
+        return this.prismaService.person.create({ data: candidate });
     }
 
-    async deleteUser(uuid: string, login: string) {
-        return;
+    async deleteUser({ uuid, login }: { uuid: string; login: string }) {
+        return this.prismaService.person.delete({
+            where: {
+                uuid: uuid,
+                login: login,
+            },
+        });
     }
 }
