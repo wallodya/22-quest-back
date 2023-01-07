@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from "uuid";
 import LoginDto from "./dto/loginDto";
 import RegisterDto from "./dto/registerDto";
 import { JwtService } from "@nestjs/jwt";
+import { UserPublic } from "types/user";
 
 const testUser = {
     uuid: "123",
@@ -29,9 +30,10 @@ export class AuthService {
         private jwtService: JwtService,
     ) {}
 
-    async login(dto: LoginDto) {
-        const user = await this.validateUser(dto);
-        return this.generateToken(user);
+    async login(user: UserPublic) {
+        return {
+            access_token: this.generateToken(user),
+        };
     }
 
     async logout() {
@@ -80,7 +82,7 @@ export class AuthService {
         return;
     }
 
-    private async validateUser(dto: LoginDto) {
+    async validateUser(dto: LoginDto): Promise<UserPublic> {
         const user = await this.userServive.getUserByEmail(dto.email);
         const isPasswordCorrect = await bcrypt.compare(
             dto.password,
@@ -92,10 +94,10 @@ export class AuthService {
             return user;
         }
 
-        throw new UnauthorizedException({ message: "Wrong email or password" });
+        return null;
     }
 
-    private async generateToken(user: Omit<Person, "user_id" | "password">) {
+    private async generateToken(user: UserPublic) {
         return this.jwtService.sign(user);
     }
 }

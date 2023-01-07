@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { Person, Prisma } from "@prisma/client";
+import { User } from "types/user";
 import { PrismaService } from "../prisma.service";
 
 const fieldsToSelect = {
@@ -22,7 +23,7 @@ export class UserService {
         return users;
     }
 
-    async getUserByLogin(login: string) {
+    async getUserByLogin(login: string): Promise<User> {
         const user = await this.prismaService.person.findFirst({
             where: { login: login },
             select: fieldsToSelect,
@@ -34,7 +35,7 @@ export class UserService {
 
         return user;
     }
-    async getUserByEmail(email: string) {
+    async getUserByEmail(email: string): Promise<User> {
         const user = await this.prismaService.person.findFirst({
             where: { email: email },
             select: fieldsToSelect,
@@ -46,7 +47,7 @@ export class UserService {
 
         return user;
     }
-    async getUserByUUID(uuid: string) {
+    async getUserByUUID(uuid: string): Promise<User> {
         const user = await this.prismaService.person.findUnique({
             where: { uuid: uuid },
             select: fieldsToSelect,
