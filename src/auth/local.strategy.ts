@@ -6,15 +6,16 @@ import { AuthService } from "./auth.service";
 import LoginDto from "./dto/loginDto";
 
 @Injectable()
-export class LocalStrategy extends PassportStrategy(Strategy) {
+export class LocalStrategy extends PassportStrategy(Strategy, "local") {
     constructor(private authService: AuthService) {
         super();
     }
 
     async validate(dto: LoginDto) {
+        console.log("validating user");
         const user: UserPublic = await this.authService.validateUser(dto);
         if (!user) {
-            throw new UnauthorizedException();
+            throw new UnauthorizedException("Wrong login or password");
         }
         return user;
     }

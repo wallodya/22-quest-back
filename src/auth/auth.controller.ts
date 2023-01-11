@@ -5,14 +5,13 @@ import {
     Headers,
     Param,
     Post,
-    Request,
-    UseGuards,
+    Req,
 } from "@nestjs/common";
-import { UserPublic } from "types/user";
+import { Request } from "express";
+import { ValidationPipe } from "pipes/validation.pipe";
 import { AuthService } from "./auth.service";
 import LoginDto from "./dto/loginDto";
-import RegisterDto from "./dto/registerDto";
-import { LocalAuthGuard } from "./localAuth.guard";
+import SignupDto from "./dto/signupDto";
 
 @Controller("auth")
 export class AuthController {
@@ -27,10 +26,12 @@ export class AuthController {
         return this.authService.activateEmail(confirmCode);
     }
 
-    @UseGuards(LocalAuthGuard)
     @Post("login")
-    async login(@Request() req: UserPublic) {
-        return this.authService.login(req);
+    async login(
+        @Body(new ValidationPipe()) loginDto: LoginDto,
+        @Req() req: Request,
+    ) {
+        return this.authService.login(loginDto);
     }
 
     @Post("logout")
@@ -38,8 +39,8 @@ export class AuthController {
         return this.authService.logout();
     }
 
-    @Post("register")
-    register(@Body() registerDto: RegisterDto) {
-        return this.authService.register(registerDto);
+    @Post("signup")
+    async signup(@Body(new ValidationPipe()) signupDto: SignupDto) {
+        return this.authService.signup(signupDto);
     }
 }

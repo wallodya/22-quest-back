@@ -1,6 +1,6 @@
 import { IsEmail, IsString, MaxLength, MinLength } from "class-validator";
 
-class RegisterDto {
+class SignupDto {
     @IsString({ message: "Login has to be a string" })
     @MinLength(4, { message: "Login needs to have at least 4 symbols" })
     @MaxLength(20, { message: "Login cannot have more than 20 symbols" })
@@ -17,4 +17,4 @@ class RegisterDto {
     readonly password: string;
 }
 
-export default RegisterDto;
+export default SignupDto;

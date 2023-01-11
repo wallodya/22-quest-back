@@ -1,46 +1,30 @@
-import {
-    HttpException,
-    HttpStatus,
-    Injectable,
-    UnauthorizedException,
-} from "@nestjs/common";
-import { Person } from "@prisma/client";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
-import { UserService } from "../user/user.service";
-import { v4 as uuidv4 } from "uuid";
-import LoginDto from "./dto/loginDto";
-import RegisterDto from "./dto/registerDto";
-import { JwtService } from "@nestjs/jwt";
+import { TokenService } from "token/token.service";
 import { UserPublic } from "types/user";
-
-const testUser = {
-    uuid: "123",
-    login: "User",
-    email: "test@test.com",
-    isEmailConfirmed: true,
-    dateOfBirth: new Date("2001-02-01"),
-    createdAt: new Date("2020-10-10"),
-    updatedAt: new Date("2020-10-12"),
-};
+import { v4 as uuidv4 } from "uuid";
+import { UserService } from "../user/user.service";
+import LoginDto from "./dto/loginDto";
+import SignupDto from "./dto/signupDto";
 
 @Injectable()
 export class AuthService {
     constructor(
         private userServive: UserService,
-        private jwtService: JwtService,
+        private tokenSerice: TokenService,
     ) {}
 
-    async login(user: UserPublic) {
-        return {
-            access_token: this.generateToken(user),
-        };
+    async login(dto: LoginDto) {
+        const user = await this.validateUser(dto);
+        const tokens = await this.tokenSerice.updateTokens(user);
+        return tokens;
     }
 
     async logout() {
         return;
     }
 
-    async register(dto: RegisterDto) {
+    async signup(dto: SignupDto) {
         const isLoginTaken = !!(await this.userServive.getUserByLogin(
             dto.login,
         ));
@@ -49,29 +33,28 @@ export class AuthService {
         ));
 
         if (isLoginTaken) {
-            throw new HttpException(
+            throw new BadRequestException(
                 "User with this login already exists",
-                HttpStatus.BAD_REQUEST,
             );
         }
 
         if (isEmailTaken) {
-            throw new HttpException(
+            throw new BadRequestException(
                 "User with this email already exists",
-                HttpStatus.BAD_REQUEST,
             );
         }
 
         const hashedPassword = await bcrypt.hash(dto.password, 5);
         const uuid = uuidv4();
 
-        const newUser = await this.userServive.createUser({
-            ...dto,
-            password: hashedPassword,
-            uuid: uuid,
-        });
-
-        return this.generateToken(newUser);
+        const { password, user_id, ...newUser } =
+            await this.userServive.createUser({
+                ...dto,
+                password: hashedPassword,
+                uuid: uuid,
+            });
+        const tokens = await this.tokenSerice.updateTokens(newUser);
+        return tokens;
     }
 
     async refresh(token: string) {
@@ -83,21 +66,20 @@ export class AuthService {
     }
 
     async validateUser(dto: LoginDto): Promise<UserPublic> {
-        const user = await this.userServive.getUserByEmail(dto.email);
+        const user = await this.userServive.getUserByLogin(dto.login);
+        if (!user) {
+            throw new BadRequestException("Wrong login or password");
+        }
         const isPasswordCorrect = await bcrypt.compare(
             dto.password,
             user.password,
         );
 
-        if (user && isPasswordCorrect) {
-            delete user.password;
-            return user;
+        if (!isPasswordCorrect) {
+            throw new BadRequestException("Wrong login or password");
         }
 
-        return null;
-    }
-
-    private async generateToken(user: UserPublic) {
-        return this.jwtService.sign(user);
+        delete user.password;
+        return user;
     }
 }
