@@ -5,7 +5,7 @@ import { TokenModule } from "token/token.module";
 import { UserModule } from "../user/user.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { secret } from "./jwtConstants";
+import { secret } from "./const/jwtConstants";
 
 @Module({
     controllers: [AuthController],

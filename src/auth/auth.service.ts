@@ -21,7 +21,7 @@ export class AuthService {
     }
 
     async logout() {
-        return;
+        return "logged out";
     }
 
     async signup(dto: SignupDto) {

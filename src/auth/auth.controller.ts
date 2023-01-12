@@ -6,12 +6,14 @@ import {
     Param,
     Post,
     Req,
+    UseGuards,
 } from "@nestjs/common";
 import { Request } from "express";
 import { ValidationPipe } from "pipes/validation.pipe";
 import { AuthService } from "./auth.service";
 import LoginDto from "./dto/loginDto";
 import SignupDto from "./dto/signupDto";
+import { LocalAuthGuard } from "./localAuth.guard";
 
 @Controller("auth")
 export class AuthController {
@@ -34,8 +36,10 @@ export class AuthController {
         return this.authService.login(loginDto);
     }
 
+    @UseGuards(LocalAuthGuard)
     @Post("logout")
     logout() {
+        console.log("loggin out");
         return this.authService.logout();
     }
 

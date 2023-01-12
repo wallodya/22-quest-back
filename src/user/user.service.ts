@@ -2,17 +2,7 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { Person, Prisma } from "@prisma/client";
 import { User } from "types/user";
 import { PrismaService } from "../prisma.service";
-
-const fieldsToSelect = {
-    uuid: true,
-    login: true,
-    email: true,
-    password: true,
-    isEmailConfirmed: true,
-    dateOfBirth: true,
-    createdAt: true,
-    updatedAt: true,
-};
+import { UserPrivateSelectFields } from "./const/user.const";
 
 @Injectable()
 export class UserService {
@@ -26,7 +16,7 @@ export class UserService {
     async getUserByLogin(login: string): Promise<User> {
         const user = await this.prismaService.person.findFirst({
             where: { login: login },
-            select: fieldsToSelect,
+            select: UserPrivateSelectFields,
         });
 
         if (!user) {
@@ -38,7 +28,7 @@ export class UserService {
     async getUserByEmail(email: string): Promise<User> {
         const user = await this.prismaService.person.findFirst({
             where: { email: email },
-            select: fieldsToSelect,
+            select: UserPrivateSelectFields,
         });
 
         if (!user) {
@@ -50,7 +40,7 @@ export class UserService {
     async getUserByUUID(uuid: string): Promise<User> {
         const user = await this.prismaService.person.findUnique({
             where: { uuid: uuid },
-            select: fieldsToSelect,
+            select: UserPrivateSelectFields,
         });
 
         if (!user) {
