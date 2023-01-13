@@ -18,6 +18,7 @@ export class LocalAuthGuard extends AuthGuard("jwt") {
     }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
+        this.logger.debug("||| Verifying tokens... ");
         const req: Request = context.switchToHttp().getRequest();
         const res: Response = context.switchToHttp().getResponse();
         try {
@@ -28,6 +29,7 @@ export class LocalAuthGuard extends AuthGuard("jwt") {
                     this.tokenService.validateToken(accessToken);
                 if (isAccesTokenValid) {
                     this.logger.debug("access token is valid");
+                    this.logger.debug("||| Token verification success");
                     return true;
                 }
             }
@@ -47,10 +49,12 @@ export class LocalAuthGuard extends AuthGuard("jwt") {
 
             this.logger.log("User from token:\n", user);
             await this.tokenService.updateTokens(user);
+            this.logger.debug("||| Token verification success");
             return true;
         } catch (err) {
             this.logger.warn(err);
             res.clearCookie(REFRESH_TOKEN_NAME);
+            this.logger.debug("||| Token verification fail");
             return false;
         }
     }
