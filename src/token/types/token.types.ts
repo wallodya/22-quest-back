@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { UserPublic } from "types/user";
 
 export type JwtToken = {
@@ -16,3 +17,10 @@ export type RefreshToken = {
 export type UserPublicToken = {
     sub: UserPublic;
 } & JwtToken;
+
+export type UserSession = Prisma.TokenMaxAggregateOutputType;
+
+export type SetRefreshTokenExpArgs = {
+    expiresIn: number;
+    refreshToken: string;
+};

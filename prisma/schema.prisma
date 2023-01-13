@@ -88,7 +88,7 @@ model Token {
   token_id    Int    @id @default(autoincrement())
   user        Person @relation(fields: [userId], references: [user_id], name: "user_has_tokens")
   userId      Int
-  refreshToken String
+  refreshToken String @unique
   ip          String
   userAgent   String @unique
 

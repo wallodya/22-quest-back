@@ -8,18 +8,12 @@ import { AuthGuard } from "@nestjs/passport";
 import { Request, Response } from "express";
 import { ExtractJwt } from "passport-jwt";
 import { TokenService } from "token/token.service";
-import { UserService } from "user/user.service";
-import { AuthService } from "./auth.service";
 import { REFRESH_TOKEN_NAME } from "./const/jwtConstants";
 
 @Injectable()
 export class LocalAuthGuard extends AuthGuard("jwt") {
     private readonly logger = new Logger(LocalAuthGuard.name);
-    constructor(
-        private userService: UserService,
-        private authService: AuthService,
-        private tokenService: TokenService,
-    ) {
+    constructor(private tokenService: TokenService) {
         super();
     }
 
@@ -51,7 +45,7 @@ export class LocalAuthGuard extends AuthGuard("jwt") {
             if (!user)
                 throw new UnauthorizedException("Refresh token is not valid");
 
-            console.log("user", user);
+            this.logger.log("User from token:\n", user);
             await this.tokenService.updateTokens(user);
             return true;
         } catch (err) {
@@ -59,6 +53,5 @@ export class LocalAuthGuard extends AuthGuard("jwt") {
             res.clearCookie(REFRESH_TOKEN_NAME);
             return false;
         }
-        return true;
     }
 }

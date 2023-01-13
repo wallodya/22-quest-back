@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { TokenService } from "token/token.service";
 import { UserPublic } from "types/user";
@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import { UserService } from "../user/user.service";
 import LoginDto from "./dto/loginDto";
 import SignupDto from "./dto/signupDto";
+import { Request } from "express";
+import { REFRESH_TOKEN_NAME } from "./const/jwtConstants";
 
 @Injectable()
 export class AuthService {
@@ -20,7 +22,14 @@ export class AuthService {
         return tokens;
     }
 
-    async logout() {
+    async logout(req: Request) {
+        const refreshToken = req.cookies[REFRESH_TOKEN_NAME];
+        try {
+            this.tokenSerice.removeToken(refreshToken);
+        } catch (err) {
+            Logger.warn(err);
+            throw new BadRequestException("Could not delete token");
+        }
         return "logged out";
     }
 

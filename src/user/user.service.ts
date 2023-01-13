@@ -50,6 +50,23 @@ export class UserService {
         return user;
     }
 
+    async getUserSessions(uuid: string) {
+        const sessions = this.prismaService.person.findFirst({
+            where: {
+                uuid: uuid,
+            },
+            include: {
+                tokens: {
+                    select: {
+                        refreshToken: true,
+                        token_id: true,
+                    },
+                },
+            },
+        });
+        return sessions;
+    }
+
     async createUser(candidate: Prisma.PersonCreateInput) {
         return this.prismaService.person.create({ data: candidate });
     }

@@ -38,9 +38,8 @@ export class AuthController {
 
     @UseGuards(LocalAuthGuard)
     @Post("logout")
-    logout() {
-        console.log("loggin out");
-        return this.authService.logout();
+    logout(@Req() req: Request) {
+        return this.authService.logout(req);
     }
 
     @Post("signup")
