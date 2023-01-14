@@ -13,15 +13,16 @@ import { ValidationPipe } from "pipes/validation.pipe";
 import { AuthService } from "./auth.service";
 import LoginDto from "./dto/loginDto";
 import SignupDto from "./dto/signupDto";
+import { SignedInGuard } from "./guards/signedIn.guard";
 import { LocalAuthGuard } from "./strategies/localAuth.strategy";
 
 @Controller("auth")
 export class AuthController {
     constructor(private authService: AuthService) {}
-    @Get("refresh")
-    refreshToken(@Headers("Authentication") token: string) {
-        return this.authService.refresh(token);
-    }
+    // @Get("refresh")
+    // refreshToken(@Headers("Authentication") token: string) {
+    //     return this.authService.refresh(token);
+    // }
 
     @Get("activate/:confirmCode")
     activateEmail(@Param() confirmCode: string) {
@@ -36,7 +37,7 @@ export class AuthController {
         return this.authService.login(loginDto);
     }
 
-    @UseGuards(LocalAuthGuard)
+    @SignedInGuard()
     @Post("logout")
     logout() {
         return this.authService.logout();

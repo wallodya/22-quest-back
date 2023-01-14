@@ -5,6 +5,7 @@ import { TaskModule } from "./task/task.module";
 import { QuestModule } from "./quest/quest.module";
 import { TokenModule } from "./token/token.module";
 import { ScheduleModule } from "@nestjs/schedule";
+import { RolesModule } from "./roles/roles.module";
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { ScheduleModule } from "@nestjs/schedule";
         QuestModule,
         TokenModule,
         ScheduleModule.forRoot(),
+        RolesModule,
     ],
 })
 export class AppModule {}
