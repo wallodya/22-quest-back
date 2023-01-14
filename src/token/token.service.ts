@@ -76,7 +76,7 @@ export class TokenService {
         return true;
     }
 
-    async getUserFromRefreshToken(refreshToken: string) {
+    async getRefreshTokenOwner(refreshToken: string) {
         this.logger.verbose("Validating refresh token...");
         this.logger.log("Token:\n", refreshToken);
 
@@ -101,7 +101,6 @@ export class TokenService {
                         refreshToken: true,
                     },
                 },
-                roles: true,
             },
         });
 

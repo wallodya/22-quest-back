@@ -55,7 +55,7 @@ export class LocalAuthGuard extends AuthGuard("jwt") {
     }
 
     private async getUserTokenData(refreshToken: string) {
-        const tokenOwner = await this.tokenService.getUserFromRefreshToken(
+        const tokenOwner = await this.tokenService.getRefreshTokenOwner(
             refreshToken,
         );
         if (!tokenOwner)
