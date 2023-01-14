@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { UserPublic } from "types/user";
+import { UserPublic } from "user/types/user";
 
 export type JwtToken = {
     sub: any;

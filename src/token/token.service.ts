@@ -6,7 +6,7 @@ import * as bcrypt from "bcrypt";
 import { RequestContext } from "nestjs-request-context";
 import { ExtractJwt } from "passport-jwt";
 import { PrismaService } from "prisma.service";
-import { UserPublic } from "types/user";
+import { UserPublic } from "user/types/user";
 import { UserService } from "user/user.service";
 import { v4 as uuidv4 } from "uuid";
 import {
