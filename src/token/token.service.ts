@@ -2,18 +2,22 @@ import { Injectable, Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
-import { REFRESH_TOKEN_NAME } from "auth/const/jwtConstants";
 import * as bcrypt from "bcrypt";
 import { RequestContext } from "nestjs-request-context";
+import { ExtractJwt } from "passport-jwt";
 import { PrismaService } from "prisma.service";
 import { UserPublic } from "types/user";
 import { UserService } from "user/user.service";
 import { v4 as uuidv4 } from "uuid";
 import {
     ACCESS_TOKEN_EXPIRATION,
+    ACCESS_TOKEN_HEADER_NAME,
     ACCESS_TOKEN_SECRET,
     bcryptTokenHashSalt,
+    REFRESH_TOKEN_COOKIE_OPTIONS,
     REFRESH_TOKEN_EXPIRATION,
+    REFRESH_TOKEN_EXPIRATION_MS,
+    REFRESH_TOKEN_NAME,
     REFRESH_TOKEN_SECRET,
 } from "./const/token.const";
 import {
@@ -36,9 +40,9 @@ export class TokenService {
 
     async updateTokens(user: UserPublic) {
         const { accessToken, refreshToken } = await this.generateTokens(user);
-        const { ip, headers } = RequestContext.currentContext.req;
+        const { ip, headers: reqHeaders } = RequestContext.currentContext.req;
         await this.updateRefreshTokens({
-            userAgent: headers["user-agent"],
+            userAgent: reqHeaders["user-agent"],
             ip,
             refreshToken,
             user: {
@@ -47,9 +51,10 @@ export class TokenService {
                 },
             },
         });
-        return {
-            access_token: accessToken,
-        };
+
+        this.logger.verbose("Setting Authorization header...");
+        this.setAccessTokenHeaders(accessToken);
+        return;
     }
 
     validateToken(token: string) {
@@ -96,6 +101,7 @@ export class TokenService {
                         refreshToken: true,
                     },
                 },
+                roles: true,
             },
         });
 
@@ -126,10 +132,6 @@ export class TokenService {
         return userSessions;
     }
 
-    private decodeToken(token: string) {
-        return this.jwtService.decode(token);
-    }
-
     async removeToken(refreshToken: string) {
         this.logger.verbose("Removing token...");
         const {
@@ -157,9 +159,6 @@ export class TokenService {
                     token_id: tokenId,
                 },
             });
-            const timouts = this.schedulerRegistry.getTimeouts();
-            this.logger.log("All timeouts: ");
-            this.logger.log(timouts);
             this.schedulerRegistry.deleteTimeout(
                 getTokenExpTimeoutName(refreshToken),
             );
@@ -187,6 +186,37 @@ export class TokenService {
         const timeoutName = getTokenExpTimeoutName(refreshToken);
         this.schedulerRegistry.addTimeout(timeoutName, timeout);
     }
+
+    getRefreshToken() {
+        const req = RequestContext.currentContext.req;
+        const refreshToken = req.cookies[REFRESH_TOKEN_NAME];
+        return refreshToken;
+    }
+
+    getAccessToken() {
+        const req = RequestContext.currentContext.req;
+        const accessToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+        return accessToken;
+    }
+
+    clearTokens() {
+        const { res } = RequestContext.currentContext;
+        res.clearCookie(REFRESH_TOKEN_NAME);
+        res.setHeader(ACCESS_TOKEN_HEADER_NAME, "");
+        return;
+    }
+
+    private decodeToken(token: string) {
+        return this.jwtService.decode(token);
+    }
+
+    private setAccessTokenHeaders = (accessToken: string) => {
+        const { headers: reqHeaders } = RequestContext.currentContext.req;
+        const res = RequestContext.currentContext.res;
+        reqHeaders[ACCESS_TOKEN_HEADER_NAME] = "Bearer " + accessToken;
+        res.setHeader(ACCESS_TOKEN_HEADER_NAME, "Bearer " + accessToken);
+        return;
+    };
 
     private async generateTokens(user: UserPublic) {
         this.logger.verbose("Generating tokens...");
@@ -216,27 +246,48 @@ export class TokenService {
         };
     }
 
+    private setRefreshCookies(refreshToken: string) {
+        this.logger.verbose("Setting Refresh-Token cookie...");
+        const request = RequestContext.currentContext.req;
+        request.cookies[REFRESH_TOKEN_NAME] = refreshToken;
+        const response = RequestContext.currentContext.res;
+        response.cookie(
+            REFRESH_TOKEN_NAME,
+            refreshToken,
+            REFRESH_TOKEN_COOKIE_OPTIONS,
+        );
+    }
+
+    private updateRemoveRTTimeout(newRefreshToken: string) {
+        this.logger.verbose("Updating remove Refresh-Token timeout...");
+        const oldRefreshToken = this.getRefreshToken();
+        try {
+            this.schedulerRegistry.deleteTimeout(
+                getTokenExpTimeoutName(oldRefreshToken),
+            );
+        } catch (err) {
+            this.logger.warn("Error in updateRemoveRTTimeout:");
+            this.logger.warn(err);
+        }
+        this.setRefreshTokenExpriration({
+            expiresIn: REFRESH_TOKEN_EXPIRATION_MS,
+            refreshToken: newRefreshToken,
+        });
+        return;
+    }
+
     private async updateRefreshTokens(tokenArgs: Prisma.TokenCreateInput) {
         this.logger.verbose("Updating refresh token...");
+
+        const newRefreshToken = tokenArgs.refreshToken;
         const hashedToken = await bcrypt.hash(
-            tokenArgs.refreshToken,
+            newRefreshToken,
             bcryptTokenHashSalt,
         );
 
         const tokenData = { ...tokenArgs, refreshToken: hashedToken };
         this.logger.log("Hashed token: ", hashedToken);
-        this.logger.log("Token data:\n", tokenData);
-
-        this.logger.verbose("Setting cookies...");
-        const request = RequestContext.currentContext.req;
-        request.cookies[REFRESH_TOKEN_NAME] = tokenArgs.refreshToken;
-        const response = RequestContext.currentContext.res;
-        const MS_IN_A_DAY = 1000 * 60 * 60 * 24;
-        response.cookie(REFRESH_TOKEN_NAME, tokenArgs.refreshToken, {
-            httpOnly: true,
-            expires: true,
-            maxAge: MS_IN_A_DAY,
-        });
+        this.logger.log("Refresh-Token data:\n", tokenData);
 
         this.logger.verbose(
             "Looking for sessions of this user agent:\n",
@@ -271,12 +322,10 @@ export class TokenService {
             });
         }
 
-        if (request.url.split("/").pop() !== "logout") {
-            this.setRefreshTokenExpriration({
-                expiresIn: 20000,
-                refreshToken: tokenArgs.refreshToken,
-            });
-        }
+        this.updateRemoveRTTimeout(newRefreshToken);
+
+        this.setRefreshCookies(newRefreshToken);
+
         return session.refreshToken;
     }
 }

@@ -13,7 +13,7 @@ import { ValidationPipe } from "pipes/validation.pipe";
 import { AuthService } from "./auth.service";
 import LoginDto from "./dto/loginDto";
 import SignupDto from "./dto/signupDto";
-import { LocalAuthGuard } from "./localAuth.guard";
+import { LocalAuthGuard } from "./strategies/localAuth.strategy";
 
 @Controller("auth")
 export class AuthController {
@@ -38,8 +38,8 @@ export class AuthController {
 
     @UseGuards(LocalAuthGuard)
     @Post("logout")
-    logout(@Req() req: Request) {
-        return this.authService.logout(req);
+    logout() {
+        return this.authService.logout();
     }
 
     @Post("signup")

@@ -6,11 +6,10 @@ import { v4 as uuidv4 } from "uuid";
 import { UserService } from "../user/user.service";
 import LoginDto from "./dto/loginDto";
 import SignupDto from "./dto/signupDto";
-import { Request } from "express";
-import { REFRESH_TOKEN_NAME } from "./const/jwtConstants";
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
     constructor(
         private userServive: UserService,
         private tokenSerice: TokenService,
@@ -22,18 +21,22 @@ export class AuthService {
         return tokens;
     }
 
-    async logout(req: Request) {
-        const refreshToken = req.cookies[REFRESH_TOKEN_NAME];
+    async logout() {
+        this.logger.debug("||| Closing session...");
+        const refreshToken = this.tokenSerice.getRefreshToken();
         try {
             this.tokenSerice.removeToken(refreshToken);
+            this.tokenSerice.clearTokens();
         } catch (err) {
-            Logger.warn(err);
+            this.logger.warn(err);
             throw new BadRequestException("Could not delete token");
         }
-        return "logged out";
+        this.logger.debug("||| Session closed");
+        return;
     }
 
     async signup(dto: SignupDto) {
+        this.logger.debug("||| Signing up new user...");
         const isLoginTaken = !!(await this.userServive.getUserByLogin(
             dto.login,
         ));
@@ -63,6 +66,7 @@ export class AuthService {
                 uuid: uuid,
             });
         const tokens = await this.tokenSerice.updateTokens(newUser);
+        this.logger.debug("||| New user created");
         return tokens;
     }
 
@@ -75,6 +79,7 @@ export class AuthService {
     }
 
     async validateUser(dto: LoginDto): Promise<UserPublic> {
+        this.logger.debug("||| Validating user...");
         const user = await this.userServive.getUserByLogin(dto.login);
         if (!user) {
             throw new BadRequestException("Wrong login or password");
@@ -88,6 +93,7 @@ export class AuthService {
             throw new BadRequestException("Wrong login or password");
         }
 
+        this.logger.debug("||| User validated");
         delete user.password;
         return user;
     }
