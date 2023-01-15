@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { prisma, Prisma, RoleEnum } from "@prisma/client";
 import { PrismaService } from "prisma.service";
+import { TokenService } from "token/token.service";
 import { UserService } from "user/user.service";
 import { AssignRoleDto } from "./dto/assignRole.dto";
 import { CreateRoleDto } from "./dto/createRole.dto";
@@ -16,6 +17,7 @@ export class RolesService {
     constructor(
         private prismaService: PrismaService,
         private userService: UserService,
+        private tokenService: TokenService,
     ) {}
 
     async getAll() {
@@ -55,7 +57,9 @@ export class RolesService {
     }
     async assignRole(dto: AssignRoleDto) {
         this.logger.debug("||| Assigning role...");
-        const assignedBy = "admin";
+        const refreshToken = await this.tokenService.getRefreshToken();
+        const { login: assignedBy } =
+            await this.tokenService.getRefreshTokenOwner(refreshToken);
         const assignRoleData: Prisma.RolesOnUsersCreateInput = {
             user: {
                 connect: {
@@ -84,6 +88,7 @@ export class RolesService {
             this.logger.debug("||| Role wasn't assigned");
             await this.checkRoleName(dto.roleName);
             await this.checkUser(dto.login);
+            await this.checkUser(assignedBy);
             this.logger.warn("Error in assignRole:");
             this.logger.warn(err);
             throw new ServiceUnavailableException();
@@ -165,6 +170,31 @@ export class RolesService {
             this.logger.warn(err);
             throw new ServiceUnavailableException();
         }
+    }
+
+    async getAllUsersWithRoles() {
+        const users = await this.prismaService.person.findMany({
+            include: {
+                roles: {
+                    select: {
+                        role: {
+                            select: {
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                user_id: "asc",
+            },
+        });
+        return users.map((user) => {
+            return {
+                ...user,
+                roles: user.roles.map((role) => role.role.name),
+            };
+        });
     }
 
     async getUserRoles(uuid: string) {

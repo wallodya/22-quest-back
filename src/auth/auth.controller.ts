@@ -1,20 +1,10 @@
-import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    Param,
-    Post,
-    Req,
-    UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
 import { Request } from "express";
 import { ValidationPipe } from "pipes/validation.pipe";
 import { AuthService } from "./auth.service";
+import { Public } from "./decorators/public.decorator";
 import LoginDto from "./dto/login.dto";
 import SignupDto from "./dto/signup.dto";
-import { SignedInGuard } from "./guards/signedIn.guard";
-import { LocalAuthGuard } from "./strategies/localAuth.strategy";
 
 @Controller("auth")
 export class AuthController {
@@ -29,6 +19,7 @@ export class AuthController {
         return this.authService.activateEmail(confirmCode);
     }
 
+    @Public()
     @Post("login")
     async login(
         @Body(new ValidationPipe()) loginDto: LoginDto,
@@ -37,12 +28,12 @@ export class AuthController {
         return this.authService.login(loginDto);
     }
 
-    @SignedInGuard()
     @Post("logout")
     logout() {
         return this.authService.logout();
     }
 
+    @Public()
     @Post("signup")
     async signup(@Body(new ValidationPipe()) signupDto: SignupDto) {
         return this.authService.signup(signupDto);

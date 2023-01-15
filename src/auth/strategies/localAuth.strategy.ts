@@ -1,15 +1,34 @@
-import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import {
+    ExecutionContext,
+    Injectable,
+    Logger,
+    UnauthorizedException,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
+import { IS_PUBLIC_METADATA_KEY } from "auth/const/auth.const";
 import { TokenService } from "token/token.service";
 
 @Injectable()
 export class LocalAuthGuard extends AuthGuard("jwt") {
     private readonly logger = new Logger(LocalAuthGuard.name);
-    constructor(private tokenService: TokenService) {
+    constructor(
+        private tokenService: TokenService,
+        private reflector: Reflector,
+    ) {
         super();
     }
 
-    async canActivate(): Promise<boolean> {
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const isPublic = this.reflector.getAllAndOverride<boolean>(
+            IS_PUBLIC_METADATA_KEY,
+            [context.getHandler(), context.getClass()],
+        );
+        if (isPublic) {
+            this.logger.debug("||| Route is puclic: no auth needed");
+            return true;
+        }
+
         this.logger.debug("||| Verifying tokens... ");
         try {
             this.logger.verbose("Checking access token...");

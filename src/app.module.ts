@@ -6,6 +6,8 @@ import { QuestModule } from "./quest/quest.module";
 import { TokenModule } from "./token/token.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RolesModule } from "./roles/roles.module";
+import { APP_GUARD } from "@nestjs/core";
+import { LocalAuthGuard } from "auth/strategies/localAuth.strategy";
 
 @Module({
     imports: [
@@ -16,6 +18,12 @@ import { RolesModule } from "./roles/roles.module";
         TokenModule,
         ScheduleModule.forRoot(),
         RolesModule,
+    ],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: LocalAuthGuard,
+        },
     ],
 })
 export class AppModule {}

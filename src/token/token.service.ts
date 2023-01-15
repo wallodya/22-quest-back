@@ -188,7 +188,7 @@ export class TokenService {
 
     getRefreshToken() {
         const req = RequestContext.currentContext.req;
-        const refreshToken = req.cookies[REFRESH_TOKEN_NAME];
+        const refreshToken: string = req.cookies[REFRESH_TOKEN_NAME];
         return refreshToken;
     }
 
