@@ -61,8 +61,8 @@ model EmailConfirmLink {
 }
 
 model Role {
-  id          Int            @id @default(autoincrement())
-  roleName    RoleEnum
+  role_id          Int            @id @default(autoincrement())
+  name    RoleEnum       @unique
   description String
   users       RolesOnUsers[] @relation(name: "role_is_assigned_to_user")
 
@@ -71,10 +71,10 @@ model Role {
 }
 
 model RolesOnUsers {
-  rolesOnnUsers_id Int    @id @default(autoincrement())
+  rolesOnUsers_id Int    @id @default(autoincrement())
   user             Person @relation(fields: [userId], references: [user_id], name: "user_has_roles")
   userId           Int
-  role             Role   @relation(fields: [roleId], references: [id], name: "role_is_assigned_to_user")
+  role             Role   @relation(fields: [roleId], references: [role_id], name: "role_is_assigned_to_user")
   roleId           Int
 
   assignedBy   Person   @relation(fields: [assignedById], references: [user_id], name: "role_is_assigned_by_user")

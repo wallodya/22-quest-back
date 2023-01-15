@@ -4,8 +4,8 @@ import { TokenService } from "token/token.service";
 import { UserPublic } from "user/types/user";
 import { v4 as uuidv4 } from "uuid";
 import { UserService } from "../user/user.service";
-import LoginDto from "./dto/loginDto";
-import SignupDto from "./dto/signupDto";
+import LoginDto from "./dto/login.dto";
+import SignupDto from "./dto/signup.dto";
 
 @Injectable()
 export class AuthService {
@@ -17,8 +17,8 @@ export class AuthService {
 
     async login(dto: LoginDto) {
         const user = await this.validateUser(dto);
-        const tokens = await this.tokenSerice.updateTokens(user);
-        return tokens;
+        await this.tokenSerice.updateTokens(user);
+        return;
     }
 
     async logout() {

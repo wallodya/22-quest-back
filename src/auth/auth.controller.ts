@@ -11,8 +11,8 @@ import {
 import { Request } from "express";
 import { ValidationPipe } from "pipes/validation.pipe";
 import { AuthService } from "./auth.service";
-import LoginDto from "./dto/loginDto";
-import SignupDto from "./dto/signupDto";
+import LoginDto from "./dto/login.dto";
+import SignupDto from "./dto/signup.dto";
 import { SignedInGuard } from "./guards/signedIn.guard";
 import { LocalAuthGuard } from "./strategies/localAuth.strategy";
 

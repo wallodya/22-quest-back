@@ -1,4 +1,5 @@
 export const UserPrivateSelectFields = {
+    user_id: true,
     uuid: true,
     login: true,
     email: true,
