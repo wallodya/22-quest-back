@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Logger, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Logger, Param, Patch, Post } from "@nestjs/common";
 import { RoleEnum } from "@prisma/client";
 import { SignedInGuard } from "auth/guards/signedIn.guard";
 import { ValidationPipe } from "pipes/validation.pipe";
@@ -11,6 +11,11 @@ import { RolesService } from "./roles.service";
 export class RolesController {
     private readonly logger = new Logger(RolesController.name);
     constructor(private roleService: RolesService) {}
+
+    @Get()
+    getAll() {
+        return this.roleService.getAll();
+    }
 
     @Post()
     createRole(@Body(new ValidationPipe()) createRoleDto: CreateRoleDto) {
@@ -25,6 +30,11 @@ export class RolesController {
     @Post("unassign")
     unnassignRole(@Body(new ValidationPipe()) unassignnRoleDto: AssignRoleDto) {
         return this.roleService.unassignRole(unassignnRoleDto);
+    }
+
+    @Patch()
+    updateRole(@Body(new ValidationPipe()) updateRoleDto: CreateRoleDto) {
+        return this.roleService.updateRole(updateRoleDto);
     }
 
     @Delete(":roleName")

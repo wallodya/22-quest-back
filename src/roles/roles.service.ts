@@ -4,7 +4,7 @@ import {
     Logger,
     ServiceUnavailableException,
 } from "@nestjs/common";
-import { Prisma, RoleEnum } from "@prisma/client";
+import { prisma, Prisma, RoleEnum } from "@prisma/client";
 import { PrismaService } from "prisma.service";
 import { UserService } from "user/user.service";
 import { AssignRoleDto } from "./dto/assignRole.dto";
@@ -17,6 +17,15 @@ export class RolesService {
         private prismaService: PrismaService,
         private userService: UserService,
     ) {}
+
+    async getAll() {
+        const roles = await this.prismaService.role.findMany({
+            orderBy: {
+                role_id: "asc",
+            },
+        });
+        return roles;
+    }
 
     async createRole(dto: CreateRoleDto) {
         this.logger.debug("||| Creating role...");
@@ -107,11 +116,33 @@ export class RolesService {
             this.logger.debug("||| Role unassigned");
         } catch (err) {
             this.logger.debug("||| Role wasn't unassignedc");
-            this.checkRoleName(dto.roleName);
-            this.checkUser(dto.login);
+            await this.checkRoleName(dto.roleName);
+            await this.checkUser(dto.login);
             this.logger.warn("Error in unassignRole:");
             this.logger.warn(err);
             throw new BadRequestException();
+        }
+    }
+
+    async updateRole(dto: CreateRoleDto) {
+        this.logger.debug("||| Updating role...");
+        const newData = {
+            description: dto.description,
+            updatedAt: new Date(Date.now()),
+        };
+        try {
+            await this.prismaService.role.update({
+                where: { name: dto.name },
+                data: newData,
+            });
+            this.logger.debug("||| Role updated...");
+            return;
+        } catch (err) {
+            this.logger.debug("||| Role wasn't updated");
+            await this.checkRoleName(dto.name);
+            this.logger.warn("Error in deleteRole:");
+            this.logger.warn(err);
+            throw new ServiceUnavailableException();
         }
     }
 
@@ -129,11 +160,24 @@ export class RolesService {
             return;
         } catch (err) {
             this.logger.debug("||| Role wasn't deleted");
-            this.checkRoleName(role);
+            await this.checkRoleName(role);
             this.logger.warn("Error in deleteRole:");
             this.logger.warn(err);
             throw new ServiceUnavailableException();
         }
+    }
+
+    async getUserRoles(uuid: string) {
+        const userRoles = await this.prismaService.rolesOnUsers.findMany({
+            where: {
+                user: {
+                    uuid: uuid,
+                },
+            },
+        });
+        this.logger.log("Roles:");
+        this.logger.log(userRoles);
+        return;
     }
 
     private async checkRoleName(roleName: RoleEnum) {
@@ -155,8 +199,8 @@ export class RolesService {
     }
 
     private async getRoleByName(roleName: RoleEnum) {
-        const isEnum = Object.values(RoleEnum).includes(roleName);
-        if (!isEnum) {
+        const matchesEnum = Object.values(RoleEnum).includes(roleName);
+        if (!matchesEnum) {
             throw new BadRequestException(
                 `Role name ${roleName} not in RoleEnum`,
             );

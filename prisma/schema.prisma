@@ -11,8 +11,12 @@ datasource db {
 }
 
 enum RoleEnum {
-  USER
+  OWNER
+  DEV
   ADMIN
+  MOD
+  CONFIRMED_USER
+  USER
 }
 
 enum TaskTypeEnum {
