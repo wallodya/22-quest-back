@@ -5,10 +5,12 @@ import { TokenService } from "token/token.service";
 import { UserModule } from "../user/user.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { JwtStrategy } from "./strategies/jwt.strategy";
+import { LocalStrategy } from "./strategies/local.strategy";
 
 @Module({
     controllers: [AuthController],
-    providers: [AuthService],
+    providers: [AuthService, LocalStrategy, JwtStrategy],
     imports: [UserModule, TokenModule, JwtModule.register({})],
 })
 export class AuthModule {}
