@@ -19,6 +19,18 @@ enum RoleEnum {
   USER
 }
 
+enum TaskDifficultyEnum {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TaskPriorityEnum {
+  NOT_IMPORTANT
+  MEDIUM
+  URGENT
+}
+
 enum TaskTypeEnum {
   BASIC
   PERIODIC
@@ -65,8 +77,8 @@ model EmailConfirmLink {
 }
 
 model Role {
-  role_id          Int            @id @default(autoincrement())
-  name    RoleEnum       @unique
+  role_id     Int            @id @default(autoincrement())
+  name        RoleEnum       @unique
   description String
   users       RolesOnUsers[] @relation(name: "role_is_assigned_to_user")
 
@@ -76,10 +88,10 @@ model Role {
 
 model RolesOnUsers {
   rolesOnUsers_id Int    @id @default(autoincrement())
-  user             Person @relation(fields: [userId], references: [user_id], name: "user_has_roles")
-  userId           Int
-  role             Role   @relation(fields: [roleId], references: [role_id], name: "role_is_assigned_to_user")
-  roleId           Int
+  user            Person @relation(fields: [userId], references: [user_id], name: "user_has_roles")
+  userId          Int
+  role            Role   @relation(fields: [roleId], references: [role_id], name: "role_is_assigned_to_user")
+  roleId          Int
 
   assignedBy   Person   @relation(fields: [assignedById], references: [user_id], name: "role_is_assigned_by_user")
   assignedById Int
@@ -89,12 +101,12 @@ model RolesOnUsers {
 }
 
 model Token {
-  token_id    Int    @id @default(autoincrement())
-  user        Person @relation(fields: [userId], references: [user_id], name: "user_has_tokens")
-  userId      Int
+  token_id     Int    @id @default(autoincrement())
+  user         Person @relation(fields: [userId], references: [user_id], name: "user_has_tokens")
+  userId       Int
   refreshToken String @unique
-  ip          String
-  userAgent   String @unique
+  ip           String
+  userAgent    String @unique
 
   createdAt DateTime @default(now())
 }
@@ -120,11 +132,13 @@ model Task {
   title        String
   text         String?
 
-  types      TaskTypeOnTask[] @relation(name: "task_has_types")
-  startTime  DateTime?
-  endTime    DateTime?
-  priority   Int              @default(2)
-  difficulty Int              @default(2)
+  types       TaskTypeOnTask[] @relation(name: "task_has_types")
+  startTime   DateTime?
+  endTime     DateTime?
+  duration    Int
+  repeatTimes Int
+  priority    Int              @default(2)
+  difficulty  Int              @default(2)
 
   isInQuest        Boolean  @default(false)
   quest            Quest    @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")

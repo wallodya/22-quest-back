@@ -60,9 +60,6 @@ export class JwtAuthGuard extends AuthGuard(AUTH_STRATEGIES.JWT) {
             await this.tokenService.updateTokens(userData);
 
             await this.attachUser(context, userData);
-            // const req = context.switchToHttp().getRequest();
-            // const user = this.clearPrivateFields(userData);
-            // req.user = await this.attachRoles(user);
 
             this.logger.debug("||| Token verification success");
             return true;

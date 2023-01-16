@@ -1,14 +1,10 @@
 import {
-    HttpException,
-    HttpStatus,
+    BadRequestException,
     Injectable,
     Logger,
     ServiceUnavailableException,
 } from "@nestjs/common";
-import { Person, Prisma, RoleEnum } from "@prisma/client";
-import { Request } from "express";
-import { RequestContext } from "nestjs-request-context";
-import { TokenService } from "token/token.service";
+import { Prisma, RoleEnum } from "@prisma/client";
 import { User } from "user/types/user";
 import { PrismaService } from "../prisma.service";
 import { UserPrivateSelectFields } from "./const/user.const";
@@ -114,6 +110,16 @@ export class UserService {
 
     async deleteUser(uuid: string) {
         this.logger.debug("||| Deleting user...");
+        const candidate = await this.prismaService.person.findFirst({
+            where: {
+                uuid: uuid,
+            },
+        });
+        if (!candidate) {
+            throw new BadRequestException(
+                `User with uuid "${uuid}" doesn't exists`,
+            );
+        }
         try {
             return this.prismaService.person.delete({
                 where: {
