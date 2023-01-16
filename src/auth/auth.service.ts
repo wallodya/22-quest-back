@@ -15,12 +15,6 @@ export class AuthService {
         private tokenSerice: TokenService,
     ) {}
 
-    async login(dto: LoginDto) {
-        const user = await this.validateUser(dto);
-        await this.tokenSerice.updateTokens(user);
-        return;
-    }
-
     async logout() {
         this.logger.debug("||| Closing session...");
         const refreshToken = this.tokenSerice.getRefreshToken();
@@ -65,12 +59,8 @@ export class AuthService {
                 password: hashedPassword,
                 uuid: uuid,
             });
-        const tokens = await this.tokenSerice.updateTokens(newUser);
+        await this.tokenSerice.updateTokens(newUser);
         this.logger.debug("||| New user created");
-        return tokens;
-    }
-
-    async refresh(token: string) {
         return;
     }
 

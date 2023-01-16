@@ -1,5 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { Person, Prisma } from "@prisma/client";
+import {
+    HttpException,
+    HttpStatus,
+    Injectable,
+    Logger,
+    ServiceUnavailableException,
+} from "@nestjs/common";
+import { Person, Prisma, RoleEnum } from "@prisma/client";
 import { Request } from "express";
 import { RequestContext } from "nestjs-request-context";
 import { TokenService } from "token/token.service";
@@ -9,9 +15,11 @@ import { UserPrivateSelectFields } from "./const/user.const";
 
 @Injectable()
 export class UserService {
+    private readonly logger = new Logger(UserService.name);
     constructor(private prismaService: PrismaService) {}
 
     async getAllUsers() {
+        this.logger.debug("||| Gettinng list of all users...");
         const users = await this.prismaService.person.findMany();
         return users;
     }
@@ -71,25 +79,51 @@ export class UserService {
     }
 
     async createUser(candidate: Prisma.PersonCreateInput) {
-        // await this.prismaService.person.create({
-        //     data: {
-        //         ...candidate,
-        //         roles: {
-        //             connect: {
-                        
-        //             }
-        //         }
-        //     } },
-        // });
-        return this.prismaService.person.create({ data: candidate });
+        this.logger.debug("||| Creating user...");
+        try {
+            const user = await this.prismaService.person.create({
+                data: candidate,
+            });
+            const ownerLogin = "wallodya";
+            await this.prismaService.rolesOnUsers.create({
+                data: {
+                    role: {
+                        connect: {
+                            name: RoleEnum.USER,
+                        },
+                    },
+                    user: {
+                        connect: {
+                            user_id: user.user_id,
+                        },
+                    },
+                    assignedBy: {
+                        connect: {
+                            login: ownerLogin,
+                        },
+                    },
+                },
+            });
+            return user;
+        } catch (err) {
+            this.logger.error("Error in createUser:");
+            this.logger.error(err);
+            throw new ServiceUnavailableException("Couldn't create a user");
+        }
     }
 
-    async deleteUser({ uuid, login }: { uuid: string; login: string }) {
-        return this.prismaService.person.delete({
-            where: {
-                uuid: uuid,
-                login: login,
-            },
-        });
+    async deleteUser(uuid: string) {
+        this.logger.debug("||| Deleting user...");
+        try {
+            return this.prismaService.person.delete({
+                where: {
+                    uuid: uuid,
+                },
+            });
+        } catch (err) {
+            this.logger.error("Error in deleteUser:");
+            this.logger.error(err);
+            throw new ServiceUnavailableException("Couldn't delete a user");
+        }
     }
 }
