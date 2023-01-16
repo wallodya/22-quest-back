@@ -204,10 +204,15 @@ export class RolesService {
                     uuid: uuid,
                 },
             },
+            select: {
+                role: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
         });
-        this.logger.log("Roles:");
-        this.logger.log(userRoles);
-        return;
+        return userRoles.map((role) => role.role.name);
     }
 
     private async checkRoleName(roleName: RoleEnum) {

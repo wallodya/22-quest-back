@@ -2,6 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { AUTH_STRATEGIES, JWT_SECRET } from "auth/const/auth.const";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import { RolesService } from "roles/roles.service";
+import { UserPublicToken } from "token/types/token.types";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(
@@ -9,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(
     AUTH_STRATEGIES.JWT,
 ) {
     private logger = new Logger(JwtStrategy.name);
-    constructor() {
+    constructor(private roleService: RolesService) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
@@ -17,9 +19,8 @@ export class JwtStrategy extends PassportStrategy(
         });
     }
 
-    async validate(payload: any) {
-        this.logger.log("Jwt strategy validate called with papyload: ");
-        this.logger.log(payload);
-        return payload;
+    async validate({ sub: user }: UserPublicToken) {
+        const roles = await this.roleService.getUserRoles(user.uuid);
+        return { ...user, roles };
     }
 }

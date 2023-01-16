@@ -5,4 +5,5 @@ export const IS_PUBLIC_METADATA_KEY = "isPublic";
 export const AUTH_STRATEGIES = {
     LOCAL: "local",
     JWT: "jwt",
+    REFRESH: "jwt-refresh",
 };

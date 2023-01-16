@@ -6,8 +6,8 @@ import { QuestModule } from "./quest/quest.module";
 import { TokenModule } from "./token/token.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RolesModule } from "./roles/roles.module";
+import { JwtAuthGuard } from "auth/guards/jwt.guard";
 import { APP_GUARD } from "@nestjs/core";
-import { LocalAuthGuard } from "auth/strategies/localAuth.strategy";
 
 @Module({
     imports: [
@@ -22,7 +22,7 @@ import { LocalAuthGuard } from "auth/strategies/localAuth.strategy";
     providers: [
         {
             provide: APP_GUARD,
-            useClass: LocalAuthGuard,
+            useClass: JwtAuthGuard,
         },
     ],
 })

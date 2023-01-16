@@ -78,7 +78,6 @@ export class TokenService {
 
     async getRefreshTokenOwner(refreshToken: string) {
         this.logger.verbose("Validating refresh token...");
-        this.logger.log("Token:\n", refreshToken);
 
         const isValidToken = this.validateToken(refreshToken);
         if (!isValidToken) {
@@ -128,7 +127,10 @@ export class TokenService {
         }
 
         this.logger.verbose("Sessions found:\n", userSessions);
-        return userSessions;
+        return {
+            ...userSessions,
+            tokens: userSessions.tokens.map((token) => token.refreshToken),
+        };
     }
 
     async removeToken(refreshToken: string) {
@@ -205,7 +207,7 @@ export class TokenService {
         return;
     }
 
-    private decodeToken(token: string) {
+    decodeToken(token: string) {
         return this.jwtService.decode(token);
     }
 
