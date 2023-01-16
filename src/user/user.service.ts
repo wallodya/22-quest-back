@@ -71,6 +71,16 @@ export class UserService {
     }
 
     async createUser(candidate: Prisma.PersonCreateInput) {
+        // await this.prismaService.person.create({
+        //     data: {
+        //         ...candidate,
+        //         roles: {
+        //             connect: {
+                        
+        //             }
+        //         }
+        //     } },
+        // });
         return this.prismaService.person.create({ data: candidate });
     }
 
