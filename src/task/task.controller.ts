@@ -10,12 +10,13 @@ import {
     Query,
     Req,
 } from "@nestjs/common";
-import { RoleEnum } from "@prisma/client";
+import { RoleEnum, TaskType, TaskTypeEnum } from "@prisma/client";
 import { Request } from "express";
 import { ValidationPipe } from "pipes/validation.pipe";
 import { Roles } from "roles/decorators/roles.decorator";
 import { UserPublic } from "user/types/user";
 import CreateTaskDto from "./dto/createTask.dto";
+import { CreateTaskTypeDto } from "./dto/createTaskType.dto";
 import { TaskService } from "./task.service";
 
 @Roles(RoleEnum.USER)
@@ -27,8 +28,7 @@ export class TaskController {
     @Roles(RoleEnum.ADMIN)
     @Get()
     getAll() {
-        this.logger.log("Get all tasks");
-        return;
+        return this.taskService.getAll();
     }
 
     @Post()
@@ -36,31 +36,49 @@ export class TaskController {
         @Body(new ValidationPipe()) dto: CreateTaskDto,
         @Req() req: Request,
     ) {
-        const user = req.user as UserPublic;
-        const data = { owner: user, ...dto } as unknown as CreateTaskDto & {
-            owner: UserPublic;
-        };
-        return this.taskService.createTask(data);
+        return this.taskService.createTask({
+            ...dto,
+            user: req.user as UserPublic,
+        });
+    }
+
+    @Patch("check")
+    checkTask(@Query("id") taskId: string) {
+        return this.taskService.checkTask(taskId);
     }
 
     @Patch("complete")
     completeTask(@Query("id") taskId: string) {
-        this.logger.log("completeTask:");
-        this.logger.log(taskId);
-        return;
+        return this.taskService.completeTask(taskId);
     }
 
-    @Patch("archive")
-    cancelTask(@Query("id") taskId: string) {
-        this.logger.log("archiveTask:");
-        this.logger.log(taskId);
-        return;
+    @Patch("fail")
+    failTask(@Query("id") taskId: string) {
+        return this.taskService.failTask(taskId);
     }
 
     @Delete()
     deleteTask(@Query("id") taskId: string) {
-        this.logger.log("deleteTask:");
-        this.logger.log(taskId);
-        return;
+        return this.taskService.deleteTask(taskId);
+    }
+
+    @Roles(RoleEnum.ADMIN, RoleEnum.DEV)
+    @Get("types")
+    getTaskTypes(@Query("name", new ValidationPipe()) typeName: TaskTypeEnum) {
+        if (typeName) {
+            return this.taskService.getTaskType(typeName);
+        } else {
+            return this.taskService.getAllTaskTypes();
+        }
+    }
+
+    @Post("types")
+    createTaskType(@Body(new ValidationPipe()) dto: CreateTaskTypeDto) {
+        return this.taskService.createTaskType(dto);
+    }
+
+    @Patch("types")
+    updateTaskType(@Body(new ValidationPipe()) dto: CreateTaskTypeDto) {
+        return this.taskService.updateTaskType(dto);
     }
 }

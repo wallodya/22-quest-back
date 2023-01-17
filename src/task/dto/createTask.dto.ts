@@ -1,8 +1,16 @@
-import { TaskTypeEnum } from "@prisma/client";
 import {
+    Prisma,
+    TaskDifficultyEnum,
+    TaskPriorityEnum,
+    TaskTypeEnum,
+} from "@prisma/client";
+import {
+    IsArray,
     IsDate,
     IsEnum,
+    IsIn,
     IsNumber,
+    IsOptional,
     IsString,
     Max,
     MaxLength,
@@ -13,33 +21,39 @@ class CreateTaskDto {
     @IsString()
     @MinLength(4)
     @MaxLength(20)
-    private readonly title: string;
+    readonly title: string;
 
     @IsString()
     @MaxLength(140)
-    private readonly text?: string;
+    readonly text?: string;
 
     @IsString()
-    private readonly difficulty: string;
+    @IsEnum(TaskDifficultyEnum)
+    readonly difficulty: TaskDifficultyEnum;
 
     @IsString()
-    private readonly priority: string;
+    @IsEnum(TaskPriorityEnum)
+    readonly priority: TaskPriorityEnum;
 
-    @IsString()
-    @IsEnum(TaskTypeEnum)
-    private readonly type: TaskTypeEnum;
+    @IsArray()
+    @IsIn(Object.values(TaskTypeEnum), { each: true })
+    readonly types: TaskTypeEnum[];
 
-    @IsDate()
-    private readonly startTime?: Date;
+    // @IsDate()
+    @IsOptional()
+    readonly startTime?: Date;
 
-    @IsDate()
-    private readonly endTime?: Date;
+    // @IsDate()
+    @IsOptional()
+    readonly endTime?: Date;
 
     @IsNumber()
-    private readonly duration?: number;
+    @IsOptional()
+    readonly duration?: number;
 
     @IsNumber()
-    private readonly repeatTimes?: number;
+    @IsOptional()
+    readonly repeatTimes?: number;
 }
 
 export default CreateTaskDto;

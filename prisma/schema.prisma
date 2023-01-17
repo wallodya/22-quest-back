@@ -34,6 +34,7 @@ enum TaskPriorityEnum {
 enum TaskTypeEnum {
   BASIC
   PERIODIC
+  REPEAT
   TIMER
 }
 
@@ -129,28 +130,32 @@ model Task {
   userId       Int
   uniqueTaskId String  @unique
   isCompleted  Boolean @default(false)
+  isFailed     Boolean @default(false)
   title        String
   text         String?
 
   types       TaskTypeOnTask[] @relation(name: "task_has_types")
   startTime   DateTime?
   endTime     DateTime?
-  duration    Int
-  repeatTimes Int
-  priority    Int              @default(2)
-  difficulty  Int              @default(2)
+  duration    Int?
+  repeatTimes Int?
+  priority    TaskPriorityEnum   @default(MEDIUM)          
+  difficulty  TaskDifficultyEnum @default(MEDIUM)       
 
   isInQuest        Boolean  @default(false)
-  quest            Quest    @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")
-  questId          Int
+  quest            Quest?    @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")
+  questId          Int?
   isCurrentInQuest Boolean?
+
+  createdAt DateTime
+  updatedAt DateTime
 
   @@unique([userId, title], name: "user_task_title")
 }
 
 model TaskType {
   taskType_id Int              @id @default(autoincrement())
-  typeName    TaskTypeEnum     @unique
+  name    TaskTypeEnum     @unique
   description String           @unique
   tasks       TaskTypeOnTask[] @relation(name: "task_type_is_assigned_to_tasks")
 
@@ -190,7 +195,7 @@ model Quest {
 
 model QuestType {
   questType_id Int          @id @default(autoincrement())
-  typeName     TaskTypeEnum @unique
+  name     TaskTypeEnum @unique
   description  String       @unique
 
   quests QuestTypeOnQuests[] @relation(name: "quest_type_is_assigned_to_quests")
