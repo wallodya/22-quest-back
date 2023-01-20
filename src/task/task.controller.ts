@@ -5,6 +5,7 @@ import {
     Get,
     Logger,
     Param,
+    ParseUUIDPipe,
     Patch,
     Post,
     Query,
@@ -12,7 +13,10 @@ import {
 } from "@nestjs/common";
 import { RoleEnum, TaskType, TaskTypeEnum } from "@prisma/client";
 import { Request } from "express";
+import { IsOwnerPipe } from "pipes/isOwner.pipe";
+import { TaskOwnerPipe } from "pipes/TaskOwner.pipe";
 import { ValidationPipe } from "pipes/validation.pipe";
+import { QuestController } from "quest/quest.controller";
 import { Roles } from "roles/decorators/roles.decorator";
 import { UserPublic } from "user/types/user";
 import CreateTaskDto from "./dto/createTask.dto";
@@ -26,9 +30,14 @@ export class TaskController {
     constructor(private taskService: TaskService) {}
 
     @Roles(RoleEnum.ADMIN)
-    @Get()
+    @Get("all")
     getAll() {
         return this.taskService.getAll();
+    }
+
+    @Get()
+    getAllForUser(@Query("user", IsOwnerPipe) userId: string) {
+        return this.taskService.getAllForUser(userId);
     }
 
     @Post()
@@ -58,7 +67,7 @@ export class TaskController {
     }
 
     @Delete()
-    deleteTask(@Query("id") taskId: string) {
+    deleteTask(@Query("id", TaskOwnerPipe) taskId: string) {
         return this.taskService.deleteTask(taskId);
     }
 
@@ -72,11 +81,13 @@ export class TaskController {
         }
     }
 
+    @Roles(RoleEnum.DEV)
     @Post("types")
     createTaskType(@Body(new ValidationPipe()) dto: CreateTaskTypeDto) {
         return this.taskService.createTaskType(dto);
     }
 
+    @Roles(RoleEnum.DEV)
     @Patch("types")
     updateTaskType(@Body(new ValidationPipe()) dto: CreateTaskTypeDto) {
         return this.taskService.updateTaskType(dto);

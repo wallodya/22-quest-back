@@ -1,23 +1,38 @@
-import { Controller, Delete, Get, Post } from "@nestjs/common";
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Patch,
+    Post,
+    Query,
+} from "@nestjs/common";
+import { RoleEnum } from "@prisma/client";
+import { ValidationPipe } from "pipes/validation.pipe";
+import { Roles } from "roles/decorators/roles.decorator";
+import { CreateQuestDto } from "./dto/createQuest.dto";
+import { QuestService } from "./quest.service";
 
 @Controller("quest")
 export class QuestController {
-    @Get()
-    getQuest() {
+    constructor(private questService: QuestService) {}
+
+    @Roles(RoleEnum.ADMIN, RoleEnum.DEV)
+    @Get("all")
+    getAll() {
         return;
     }
+
+    @Get()
+    getQuest(@Query("id") questId: string) {
+        return;
+    }
+
     @Post()
     createQuest() {
         return;
     }
-    @Post("start")
-    startQuest() {
-        return;
-    }
-    @Post("complete")
-    completeQuest() {
-        return;
-    }
+
     @Delete()
     deleteQuest() {
         return;

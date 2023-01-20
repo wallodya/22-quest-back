@@ -59,7 +59,7 @@ model Person {
   tokens           Token[]           @relation(name: "user_has_tokens")
   preferences      Preference[]      @relation(name: "user_has_preferences")
   tasks            Task[]            @relation(name: "user_has_tasks")
-  quests           QuestsOnUsers[]   @relation(name: "user_has_quests")
+  quests           Quest[]           @relation(name: "quest_belongs_to_user")
   createdQuests    Quest[]           @relation(name: "user_creates_quests")
 
   createdAt DateTime @default(now())
@@ -134,16 +134,16 @@ model Task {
   title        String
   text         String?
 
-  types       TaskTypeOnTask[] @relation(name: "task_has_types")
+  types       TaskTypeOnTask[]   @relation(name: "task_has_types")
   startTime   DateTime?
   endTime     DateTime?
   duration    Int?
   repeatTimes Int?
-  priority    TaskPriorityEnum   @default(MEDIUM)          
-  difficulty  TaskDifficultyEnum @default(MEDIUM)       
+  priority    TaskPriorityEnum   @default(MEDIUM)
+  difficulty  TaskDifficultyEnum @default(MEDIUM)
 
   isInQuest        Boolean  @default(false)
-  quest            Quest?    @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")
+  quest            Quest?   @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")
   questId          Int?
   isCurrentInQuest Boolean?
 
@@ -155,7 +155,7 @@ model Task {
 
 model TaskType {
   taskType_id Int              @id @default(autoincrement())
-  name    TaskTypeEnum     @unique
+  name        TaskTypeEnum     @unique
   description String           @unique
   tasks       TaskTypeOnTask[] @relation(name: "task_type_is_assigned_to_tasks")
 
@@ -182,8 +182,9 @@ model Quest {
   isStarted     Boolean             @default(false)
   isCompleted   Boolean             @default(false)
   tasks         Task[]              @relation(name: "quest_consists_of_tasks")
-  owner         QuestsOnUsers[]     @relation(name: "quest_belongs_to_users")
-  author        Person              @relation(fields: [authorId], references: [user_id], "user_creates_quests")
+  user          Person              @relation(fields: [userId], references: [user_id], name: "quest_belongs_to_user")
+  userId        Int
+  author        Person              @relation(fields: [authorId], references: [user_id], name: "user_creates_quests")
   authorId      Int
 
   createdAt DateTime
@@ -195,7 +196,7 @@ model Quest {
 
 model QuestType {
   questType_id Int          @id @default(autoincrement())
-  name     TaskTypeEnum @unique
+  name         TaskTypeEnum @unique
   description  String       @unique
 
   quests QuestTypeOnQuests[] @relation(name: "quest_type_is_assigned_to_quests")
@@ -214,14 +215,14 @@ model QuestTypeOnQuests {
   @@unique([questId, questTypeId], name: "quest_type")
 }
 
-model QuestsOnUsers {
-  questOnUsers_id Int    @id @default(autoincrement())
-  user            Person @relation(fields: [userId], references: [user_id], name: "user_has_quests")
-  userId          Int
-  quest           Quest  @relation(fields: [questId], references: [quest_id], name: "quest_belongs_to_users")
-  questId         Int
+// model QuestsOnUsers {
+//   questOnUsers_id Int    @id @default(autoincrement())
+//   user            Person @relation(fields: [userId], references: [user_id], name: "user_has_quests")
+//   userId          Int
+//   quest           Quest  @relation(fields: [questId], references: [quest_id], name: "quest_belongs_to_users")
+//   questId         Int
 
-  createdAt DateTime @default(now())
+//   createdAt DateTime @default(now())
 
-  @@unique([userId, questId], name: "user_quest")
-}
+//   @@unique([userId, questId], name: "user_quest")
+// }

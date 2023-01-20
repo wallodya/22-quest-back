@@ -40,6 +40,31 @@ export class TaskService {
         }
     }
 
+    async getAllForUser(userid: string) {
+        try {
+            const allUserTasks = await this.prismaService.task.findMany({
+                where: {
+                    user: {
+                        uuid: userid,
+                    },
+                },
+            });
+            return allUserTasks;
+        } catch (err) {
+            this.logger.warn("||| Couldn't get all tasks for user");
+            const doesUserExist = await this.userService.getUserByUUID(userid);
+            if (!doesUserExist) {
+                throw new BadRequestException(
+                    `User with id ${userid} doesn't exist`,
+                );
+            }
+            this.logger.warn(err);
+            throw new ServiceUnavailableException(
+                "Couldn't get all tasks for user",
+            );
+        }
+    }
+
     async createTask(dto: CreateTaskDto & { user: UserPublic }) {
         this.logger.debug("||| Creating a task...");
         this.validateDto(dto);

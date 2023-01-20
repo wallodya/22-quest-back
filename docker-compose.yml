@@ -1,0 +1,35 @@
+version: '3.0'
+services:
+  main:
+    container_name: main
+    build: 
+      context: .
+    env_file: 
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+      - "9229:9229"
+    command: npm run start:dev
+    depends_on:
+      - postgres
+    restart: always
+
+  postgres:
+    container_name: postgres
+    image: postgres:12
+    env_file: 
+      - .env
+    environment:
+      PG_DATA: /var/lib/postgresql/data
+    ports:
+      - 54320:5432
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    restart: always
+
+volumes:
+  db:
