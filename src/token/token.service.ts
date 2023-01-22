@@ -9,17 +9,7 @@ import { PrismaService } from "prisma.service";
 import { UserPublic } from "user/types/user";
 import { UserService } from "user/user.service";
 import { v4 as uuidv4 } from "uuid";
-import {
-    ACCESS_TOKEN_EXPIRATION,
-    ACCESS_TOKEN_HEADER_NAME,
-    ACCESS_TOKEN_SECRET,
-    bcryptTokenHashSalt,
-    REFRESH_TOKEN_COOKIE_OPTIONS,
-    REFRESH_TOKEN_EXPIRATION,
-    REFRESH_TOKEN_EXPIRATION_MS,
-    REFRESH_TOKEN_NAME,
-    REFRESH_TOKEN_SECRET,
-} from "./const/token.const";
+import { TokenConst } from "./const/token.const";
 import {
     JwtToken,
     RefreshToken,
@@ -36,6 +26,7 @@ export class TokenService {
         private jwtService: JwtService,
         private prismaService: PrismaService,
         private schedulerRegistry: SchedulerRegistry,
+        private tokenConst: TokenConst,
     ) {}
 
     async updateTokens(user: UserPublic) {
@@ -190,7 +181,8 @@ export class TokenService {
 
     getRefreshToken() {
         const req = RequestContext.currentContext.req;
-        const refreshToken: string = req.cookies[REFRESH_TOKEN_NAME];
+        const refreshToken: string =
+            req.cookies[this.tokenConst.REFRESH_TOKEN_NAME];
         return refreshToken;
     }
 
@@ -202,8 +194,8 @@ export class TokenService {
 
     clearTokens() {
         const { res } = RequestContext.currentContext;
-        res.clearCookie(REFRESH_TOKEN_NAME);
-        res.setHeader(ACCESS_TOKEN_HEADER_NAME, "");
+        res.clearCookie(this.tokenConst.REFRESH_TOKEN_NAME);
+        res.setHeader(this.tokenConst.ACCESS_TOKEN_HEADER_NAME, "");
         return;
     }
 
@@ -214,8 +206,12 @@ export class TokenService {
     private setAccessTokenHeaders = (accessToken: string) => {
         const { headers: reqHeaders } = RequestContext.currentContext.req;
         const res = RequestContext.currentContext.res;
-        reqHeaders[ACCESS_TOKEN_HEADER_NAME] = "Bearer " + accessToken;
-        res.setHeader(ACCESS_TOKEN_HEADER_NAME, "Bearer " + accessToken);
+        reqHeaders[this.tokenConst.ACCESS_TOKEN_HEADER_NAME] =
+            "Bearer " + accessToken;
+        res.setHeader(
+            this.tokenConst.ACCESS_TOKEN_HEADER_NAME,
+            "Bearer " + accessToken,
+        );
         return;
     };
 
@@ -232,12 +228,12 @@ export class TokenService {
         };
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(accessTokenPayload, {
-                secret: ACCESS_TOKEN_SECRET,
-                expiresIn: ACCESS_TOKEN_EXPIRATION,
+                secret: this.tokenConst.ACCESS_TOKEN_SECRET,
+                expiresIn: this.tokenConst.ACCESS_TOKEN_EXPIRATION,
             }),
             this.jwtService.signAsync(refreshTokenPayload, {
-                secret: REFRESH_TOKEN_SECRET,
-                expiresIn: REFRESH_TOKEN_EXPIRATION,
+                secret: this.tokenConst.REFRESH_TOKEN_SECRET,
+                expiresIn: this.tokenConst.REFRESH_TOKEN_EXPIRATION,
             }),
         ]);
         this.logger.verbose("Access and refresh tokens are generated");
@@ -250,12 +246,12 @@ export class TokenService {
     private setRefreshCookies(refreshToken: string) {
         this.logger.verbose("Setting Refresh-Token cookie...");
         const request = RequestContext.currentContext.req;
-        request.cookies[REFRESH_TOKEN_NAME] = refreshToken;
+        request.cookies[this.tokenConst.REFRESH_TOKEN_NAME] = refreshToken;
         const response = RequestContext.currentContext.res;
         response.cookie(
-            REFRESH_TOKEN_NAME,
+            this.tokenConst.REFRESH_TOKEN_NAME,
             refreshToken,
-            REFRESH_TOKEN_COOKIE_OPTIONS,
+            this.tokenConst.REFRESH_TOKEN_COOKIE_OPTIONS,
         );
     }
 
@@ -271,7 +267,7 @@ export class TokenService {
             this.logger.warn(err);
         }
         this.setRefreshTokenExpriration({
-            expiresIn: REFRESH_TOKEN_EXPIRATION_MS,
+            expiresIn: this.tokenConst.REFRESH_TOKEN_EXPIRATION_MS,
             refreshToken: newRefreshToken,
         });
         return;
@@ -283,7 +279,7 @@ export class TokenService {
         const newRefreshToken = tokenArgs.refreshToken;
         const hashedToken = await bcrypt.hash(
             newRefreshToken,
-            bcryptTokenHashSalt,
+            this.tokenConst.bcryptTokenHashSalt,
         );
 
         const tokenData = { ...tokenArgs, refreshToken: hashedToken };
