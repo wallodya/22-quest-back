@@ -1,27 +1,22 @@
 version: '3.0'
 services:
-  main:
-    container_name: main
-    build: 
-      context: .
-    env_file: 
-      - .env
+  app:
+    image: node:18-alpine
+    command: npm i && npm run start:dev
     volumes:
-      - .:/app
+      - ./:/app
       - /app/node_modules
     ports:
       - "3000:3000"
-      - "9229:9229"
-    command: npm run start:dev
+    working_dir: /app
     depends_on:
       - postgres
     restart: always
 
   postgres:
-    container_name: postgres
     image: postgres:12
     env_file: 
-      - .env
+      - ./env/.development.env
     environment:
       PG_DATA: /var/lib/postgresql/data
     ports:
