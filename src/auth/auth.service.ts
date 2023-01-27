@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 import { TokenService } from "token/token.service";
 import { UserPublic } from "user/types/user";
 import { v4 as uuidv4 } from "uuid";

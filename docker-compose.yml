@@ -1,26 +1,21 @@
 version: '3.0'
 services:
   app:
-    image: node:18-alpine
-    command: npm i && npm run start:dev
+    build: 
+      dockerfile: Dockerfile
+      context: .
     volumes:
-      - ./:/app
-      - /app/node_modules
+      - ./:/var/www/app
     ports:
       - "3000:3000"
-    working_dir: /app
     depends_on:
-      - postgres
-    restart: always
+      - psql
+    command: npm run start:dev
 
-  postgres:
-    image: postgres:12
-    env_file: 
-      - ./env/.development.env
-    environment:
-      PG_DATA: /var/lib/postgresql/data
-    ports:
-      - 54320:5432
+  psql:
+    image: postgres:15
+    env_file:
+      - ./env/.development.env 
     volumes:
       - db:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
