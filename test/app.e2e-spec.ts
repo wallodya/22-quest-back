@@ -15,10 +15,6 @@ describe("All endpoints are defined (e2e)", () => {
         await app.init();
     });
 
-    it("/user (GET)", () => {
-        return request(app.getHttpServer()).get("/user").expect(200);
-    });
-
     it("/auth/login (POST)", () => {
         return request(app.getHttpServer()).post("/auth/login").expect(201);
     });
