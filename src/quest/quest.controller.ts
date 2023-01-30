@@ -36,12 +36,12 @@ export class QuestController {
         return this.questService.get(questId);
     }
 
-    @Patch()
+    @Patch("complete")
     complete(@Query("id") questId: string) {
         return this.questService.complete(questId);
     }
 
-    @Patch()
+    @Patch("start")
     start(@Query("id") questId: string) {
         return this.questService.start(questId);
     }

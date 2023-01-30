@@ -63,6 +63,7 @@ export class QuestService {
     }
 
     async getAllForUser(userId: string) {
+        this.logger.debug("||| Getting quests for user...");
         try {
             const allUserQuests = await this.prismaService.quest.findMany({
                 where: {
@@ -132,6 +133,22 @@ export class QuestService {
 
     async delete(questId: string) {
         this.logger.debug("||| Deleting quest...");
+        const tasksToDelete = await this.prismaService.task.findMany({
+            where: {
+                isInQuest: true,
+                quest: {
+                    uniqueQuestId: questId,
+                },
+            },
+            select: {
+                uniqueTaskId: true,
+            },
+        });
+        await Promise.all(
+            tasksToDelete.map((task) =>
+                this.taskService.deleteTask(task.uniqueTaskId),
+            ),
+        );
         try {
             const deletedQuest = await this.prismaService.quest.delete({
                 where: {
@@ -141,6 +158,16 @@ export class QuestService {
             return deletedQuest;
         } catch (err) {
             this.logger.warn("||| Couldn't delete quest");
+            const quest = await this.prismaService.quest.findFirst({
+                where: {
+                    uniqueQuestId: questId,
+                },
+            });
+            if (!quest) {
+                throw new BadRequestException(
+                    `Quest with id "${questId}" doesn't exist`,
+                );
+            }
             this.logger.warn(err);
             throw new ServiceUnavailableException();
         }
@@ -164,6 +191,16 @@ export class QuestService {
             return quest;
         } catch (err) {
             this.logger.warn("||| Couldn't mark quest as started...");
+            const quest = await this.prismaService.quest.findFirst({
+                where: {
+                    uniqueQuestId: questId,
+                },
+            });
+            if (!quest) {
+                throw new BadRequestException(
+                    `Quest with id "${questId}" doesn't exist`,
+                );
+            }
             this.logger.warn(err);
             throw new ServiceUnavailableException();
         }
@@ -185,6 +222,16 @@ export class QuestService {
             return quest;
         } catch (err) {
             this.logger.warn("||| Couldn't mark quest as complete...");
+            const quest = await this.prismaService.quest.findFirst({
+                where: {
+                    uniqueQuestId: questId,
+                },
+            });
+            if (!quest) {
+                throw new BadRequestException(
+                    `Quest with id "${questId}" doesn't exist`,
+                );
+            }
             this.logger.warn(err);
             throw new ServiceUnavailableException();
         }

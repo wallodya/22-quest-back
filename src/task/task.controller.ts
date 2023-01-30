@@ -36,7 +36,7 @@ export class TaskController {
     }
 
     @Get()
-    getAllForUser(@Query("user", IsOwnerPipe) userId: string) {
+    getAllForUser(@Query("user") userId: string) {
         return this.taskService.getAllForUser(userId);
     }
 
