@@ -20,21 +20,36 @@ export class QuestController {
     @Roles(RoleEnum.ADMIN, RoleEnum.DEV)
     @Get("all")
     getAll() {
-        return;
+        return this.questService.getAll();
+    }
+
+    @Get("u")
+    getAllForUser(@Query("uuid") uuid: string) {
+        return this.questService.getAllForUser(uuid);
     }
 
     @Get()
-    getQuest(@Query("id") questId: string) {
-        return;
+    getOne(@Query("id") questId: string) {
+        return this.questService.get(questId);
+    }
+
+    @Patch()
+    complete(@Query("id") questId: string) {
+        return this.questService.complete(questId);
+    }
+
+    @Patch()
+    start(@Query("id") questId: string) {
+        return this.questService.start(questId);
     }
 
     @Post()
-    createQuest() {
-        return;
+    create(@Body(new ValidationPipe()) dto: CreateQuestDto) {
+        return this.questService.create(dto);
     }
 
     @Delete()
-    deleteQuest() {
-        return;
+    delete(@Query("id") quetsId: string) {
+        return this.questService.delete(quetsId);
     }
 }

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from "prisma.service";
 import { TaskService } from "task/task.service";
 import { UserService } from "user/user.service";
+import { CreateQuestDto } from "./dto/createQuest.dto";
 
 @Injectable()
 export class QuestService {
@@ -22,6 +23,15 @@ export class QuestService {
         try {
             const allQuests = await this.prismaService.quest.findMany({
                 orderBy: { quest_id: "asc" },
+                include: {
+                    tasks: true,
+                    author: {
+                        select: {
+                            uuid: true,
+                            login: true,
+                        },
+                    },
+                },
             });
             return allQuests;
         } catch (err) {
@@ -31,18 +41,37 @@ export class QuestService {
         }
     }
 
-    async getForUser(userId: string) {
+    async get(questId: string) {
+        this.logger.debug("Getting quest...");
         try {
-            const allUserTasks = await this.prismaService.quest.findMany({
+            const quest = await this.prismaService.quest.findFirst({
+                where: {
+                    uniqueQuestId: questId,
+                },
+                include: {
+                    tasks: true,
+                },
+            });
+            return quest;
+        } catch (err) {
+            this.logger.warn("||| Couldn't get quest");
+            this.logger.warn(err);
+            throw new ServiceUnavailableException("Couldn't get quest");
+        }
+    }
+
+    async getAllForUser(userId: string) {
+        try {
+            const allUserQuests = await this.prismaService.quest.findMany({
                 where: {
                     user: {
                         uuid: userId,
                     },
                 },
             });
-            return allUserTasks;
+            return allUserQuests;
         } catch (err) {
-            this.logger.warn("||| Couldn't get all tasks");
+            this.logger.warn("||| Couldn't get all quests");
             const doesUserExist = await this.userService.getUserByUUID(userId);
             if (!doesUserExist) {
                 throw new BadRequestException(
@@ -54,15 +83,65 @@ export class QuestService {
         }
     }
 
-    async create(questId: string) {
+    async create(dto: CreateQuestDto) {
         return;
     }
 
     async delete(questId: string) {
-        return;
+        this.logger.debug("||| Deleting quest...");
+        try {
+            const deletedQuest = await this.prismaService.quest.delete({
+                where: {
+                    uniqueQuestId: questId,
+                },
+            });
+            return deletedQuest;
+        } catch (err) {
+            this.logger.warn("||| Couldn't delete quest");
+            this.logger.warn(err);
+            throw new ServiceUnavailableException();
+        }
     }
 
-    async restart(questId: string) {
-        return;
+    async start(questId: string) {
+        this.logger.debug("||| Marking quest as started...");
+        try {
+            const quest = await this.prismaService.quest.update({
+                where: {
+                    uniqueQuestId: questId,
+                },
+                data: {
+                    isCompleted: false,
+                    isStarted: true,
+                },
+            });
+            this.logger.warn("||| Quest marked as started...");
+            return quest;
+        } catch (err) {
+            this.logger.warn("||| Couldn't mark quest as started...");
+            this.logger.warn(err);
+            throw new ServiceUnavailableException();
+        }
+    }
+
+    async complete(questId: string) {
+        this.logger.debug("||| Marking quest as complete...");
+        try {
+            const quest = await this.prismaService.quest.update({
+                where: {
+                    uniqueQuestId: questId,
+                },
+                data: {
+                    isCompleted: true,
+                    isStarted: false,
+                },
+            });
+            this.logger.warn("||| Quest marked as complete...");
+            return quest;
+        } catch (err) {
+            this.logger.warn("||| Couldn't mark quest as complete...");
+            this.logger.warn(err);
+            throw new ServiceUnavailableException();
+        }
     }
 }
