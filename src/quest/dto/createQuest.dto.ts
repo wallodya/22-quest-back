@@ -13,7 +13,7 @@ export class CreateQuestDto {
     @IsString()
     @MinLength(3)
     @MaxLength(30)
-    readonly name: string;
+    readonly title: string;
 
     @IsString()
     @MaxLength(200)

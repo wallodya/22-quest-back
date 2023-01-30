@@ -6,12 +6,15 @@ import {
     Patch,
     Post,
     Query,
+    Req,
 } from "@nestjs/common";
+import { Request } from "express";
 import { RoleEnum } from "@prisma/client";
 import { ValidationPipe } from "pipes/validation.pipe";
 import { Roles } from "roles/decorators/roles.decorator";
 import { CreateQuestDto } from "./dto/createQuest.dto";
 import { QuestService } from "./quest.service";
+import { UserPublic } from "user/types/user";
 
 @Controller("quest")
 export class QuestController {
@@ -44,8 +47,14 @@ export class QuestController {
     }
 
     @Post()
-    create(@Body(new ValidationPipe()) dto: CreateQuestDto) {
-        return this.questService.create(dto);
+    create(
+        @Body(new ValidationPipe()) dto: CreateQuestDto,
+        @Req() req: Request,
+    ) {
+        return this.questService.create({
+            ...dto,
+            user: req.user as UserPublic,
+        });
     }
 
     @Delete()

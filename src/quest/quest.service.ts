@@ -4,8 +4,10 @@ import {
     Logger,
     ServiceUnavailableException,
 } from "@nestjs/common";
+import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "prisma.service";
 import { TaskService } from "task/task.service";
+import { UserPublic } from "user/types/user";
 import { UserService } from "user/user.service";
 import { CreateQuestDto } from "./dto/createQuest.dto";
 
@@ -83,8 +85,49 @@ export class QuestService {
         }
     }
 
-    async create(dto: CreateQuestDto) {
-        return;
+    async create(dto: CreateQuestDto & { user: UserPublic }) {
+        this.logger.debug("||| Creating quest...");
+        const tasks = await Promise.all(
+            dto.tasks.map((task) =>
+                this.taskService.createTask({ ...task, user: dto.user }),
+            ),
+        );
+        try {
+            const uniqueQuestId = uuidv4();
+            const currentTime = new Date();
+            const quest = await this.prismaService.quest.create({
+                data: {
+                    ...dto,
+                    uniqueQuestId,
+                    createdAt: currentTime,
+                    updatedAt: currentTime,
+                    startedAt: currentTime,
+                    user: {
+                        connect: {
+                            uuid: dto.user.uuid,
+                        },
+                    },
+                    author: {
+                        connect: {
+                            uuid: dto.user.uuid,
+                        },
+                    },
+                    tasks: {
+                        connect: {
+                            uniqueTaskId: tasks[0].uniqueTaskId,
+                        },
+                    },
+                },
+                include: {
+                    tasks: true,
+                },
+            });
+            return quest;
+        } catch (err) {
+            this.logger.warn("||| Couldn't create a quest");
+            this.logger.warn(err);
+            throw new ServiceUnavailableException("Couldn't create new quest");
+        }
     }
 
     async delete(questId: string) {
@@ -106,6 +149,7 @@ export class QuestService {
     async start(questId: string) {
         this.logger.debug("||| Marking quest as started...");
         try {
+            const currentTime = new Date();
             const quest = await this.prismaService.quest.update({
                 where: {
                     uniqueQuestId: questId,
@@ -113,6 +157,7 @@ export class QuestService {
                 data: {
                     isCompleted: false,
                     isStarted: true,
+                    startedAt: currentTime,
                 },
             });
             this.logger.warn("||| Quest marked as started...");
