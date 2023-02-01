@@ -90,7 +90,7 @@ model Role {
 
 model RolesOnUsers {
   rolesOnUsers_id Int    @id @default(autoincrement())
-  user            Person @relation(fields: [userId], references: [user_id], name: "user_has_roles")
+  user            Person @relation(fields: [userId], references: [user_id], name: "user_has_roles", onDelete: Cascade)
   userId          Int
   role            Role   @relation(fields: [roleId], references: [role_id], name: "role_is_assigned_to_user")
   roleId          Int
@@ -104,7 +104,7 @@ model RolesOnUsers {
 
 model Token {
   token_id     Int    @id @default(autoincrement())
-  user         Person @relation(fields: [userId], references: [user_id], name: "user_has_tokens")
+  user         Person @relation(fields: [userId], references: [user_id], name: "user_has_tokens", onDelete: Cascade)
   userId       Int
   refreshToken String @unique
   ip           String
@@ -166,7 +166,7 @@ model TaskType {
 
 model TaskTypeOnTask {
   taskTypeOnTask_id Int      @id @default(autoincrement())
-  task              Task     @relation(fields: [taskId], references: [task_id], name: "task_has_types")
+  task              Task     @relation(fields: [taskId], references: [task_id], name: "task_has_types", onDelete: Cascade)
   taskId            Int
   type              TaskType @relation(fields: [taskTypeId], references: [taskType_id], name: "task_type_is_assigned_to_tasks")
   taskTypeId        Int
@@ -190,7 +190,7 @@ model Quest {
 
   createdAt DateTime
   updatedAt DateTime
-  startedAt DateTime
+  startedAt DateTime?
 
   @@unique([authorId, title], name: "quest_title")
 }

@@ -65,7 +65,10 @@ export class TaskService {
         }
     }
 
-    async createTask(dto: CreateTaskDto & { user: UserPublic }) {
+    async createTask(
+        dto: CreateTaskDto & { user: UserPublic },
+        isInQuest = false,
+    ) {
         this.logger.debug("||| Creating a task...");
         this.validateDto(dto);
         try {
@@ -79,6 +82,7 @@ export class TaskService {
                     createdAt: currentTime,
                     updatedAt: currentTime,
                     types: {},
+                    isInQuest: isInQuest,
                     user: {
                         connect: {
                             uuid: userId,

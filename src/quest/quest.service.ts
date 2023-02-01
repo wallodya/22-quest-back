@@ -10,6 +10,7 @@ import { TaskService } from "task/task.service";
 import { UserPublic } from "user/types/user";
 import { UserService } from "user/user.service";
 import { CreateQuestDto } from "./dto/createQuest.dto";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class QuestService {
@@ -90,19 +91,39 @@ export class QuestService {
         this.logger.debug("||| Creating quest...");
         const tasks = await Promise.all(
             dto.tasks.map((task) =>
-                this.taskService.createTask({ ...task, user: dto.user }),
+                this.taskService.createTask({ ...task, user: dto.user }, true),
             ),
         );
         try {
             const uniqueQuestId = uuidv4();
             const currentTime = new Date();
+            // const data: Prisma.QuestCreateInput = {
+            //     ...dto,
+            //     uniqueQuestId,
+            //     createdAt: currentTime,
+            //     updatedAt: currentTime,
+            //     user: {
+            //         connect: {
+            //             uuid: dto.user.uuid,
+            //         },
+            //     },
+            //     author: {
+            //         connect: {
+            //             uuid: dto.user.uuid,
+            //         },
+            //     },
+            //     tasks: {
+            //         connect: tasks.map((task) => {
+            //             return { uniqueTaskId: task.uniqueTaskId };
+            //         }),
+            //     },
+            // };
             const quest = await this.prismaService.quest.create({
                 data: {
                     ...dto,
                     uniqueQuestId,
                     createdAt: currentTime,
                     updatedAt: currentTime,
-                    startedAt: currentTime,
                     user: {
                         connect: {
                             uuid: dto.user.uuid,
@@ -114,9 +135,9 @@ export class QuestService {
                         },
                     },
                     tasks: {
-                        connect: {
-                            uniqueTaskId: tasks[0].uniqueTaskId,
-                        },
+                        connect: tasks.map((task) => {
+                            return { uniqueTaskId: task.uniqueTaskId };
+                        }),
                     },
                 },
                 include: {

@@ -12,6 +12,9 @@ services:
     depends_on:
       - psql
     command: npm run start:dev
+    env_file:
+      - ./env/.development.env
+    
 
   psql:
     image: postgres:15
