@@ -14,6 +14,7 @@ import { UserService } from "user/user.service";
 import { v4 as uuidv4 } from "uuid";
 import CreateTaskDto from "./dto/createTask.dto";
 import { CreateTaskTypeDto } from "./dto/createTaskType.dto";
+import { CompletedTask } from "./types/task.types";
 import { getTaskFailTimoutName } from "./utils/task.utils";
 
 @Injectable()
@@ -149,14 +150,35 @@ export class TaskService {
                             },
                         },
                     },
+                    priority: true,
+                    isInQuest: true,
+                    quest: true,
                 },
             });
+
             const isPeriodic = failedTask.types.some(
                 (type) => type.type.name === TaskTypeEnum.PERIODIC,
             );
             if (isPeriodic) {
                 this.removeFailTaskTimeOut(failedTask.uniqueTaskId);
             }
+
+            const isImoprtant =
+                failedTask.priority === "MEDIUM" ||
+                failedTask.priority === "URGENT";
+            const { isInQuest } = failedTask;
+            if (isImoprtant && isInQuest) {
+                const failedQuest = await this.prismaService.quest.update({
+                    where: {
+                        quest_id: failedTask.quest.quest_id,
+                    },
+                    data: {
+                        isFailed: true,
+                    },
+                });
+                return failedQuest;
+            }
+
             this.logger.debug("||| Task was marked failed");
             return failedTask;
         } catch (err) {
@@ -204,10 +226,18 @@ export class TaskService {
             const completedTask = await this.prismaService.task.update({
                 where: { uniqueTaskId: taskId },
                 data: {
+                    isCurrentInQuest: false,
                     isCompleted: true,
                     updatedAt: currentTime,
                 },
                 select: {
+                    task_id: true,
+                    isInQuest: true,
+                    quest: {
+                        select: {
+                            quest_id: true,
+                        },
+                    },
                     uniqueTaskId: true,
                     types: {
                         select: {
@@ -220,6 +250,7 @@ export class TaskService {
                     },
                 },
             });
+
             const isPeriodic = completedTask.types.some(
                 (type) => type.type.name === TaskTypeEnum.PERIODIC,
             );
@@ -227,6 +258,11 @@ export class TaskService {
             if (isPeriodic) {
                 this.removeFailTaskTimeOut(completedTask.uniqueTaskId);
             }
+
+            if (completedTask.isInQuest) {
+                return this.switchCurrentTask(completedTask);
+            }
+
             this.logger.debug("||| Task marked as completed");
             return completedTask;
         } catch (err) {
@@ -235,6 +271,46 @@ export class TaskService {
             this.logger.warn(err);
             throw new ServiceUnavailableException();
         }
+    }
+
+    async switchCurrentTask(completedTask: CompletedTask) {
+        const nextTask = await this.prismaService.task.findFirst({
+            where: {
+                AND: {
+                    task_id: {
+                        gt: completedTask.task_id,
+                    },
+                    isInQuest: true,
+                    questId: completedTask.quest.quest_id,
+                },
+            },
+            select: {
+                task_id: true,
+            },
+        });
+
+        if (nextTask) {
+            const currentTask = await this.prismaService.task.update({
+                where: {
+                    task_id: nextTask.task_id,
+                },
+                data: {
+                    isCurrentInQuest: true,
+                },
+            });
+            return currentTask;
+        }
+
+        await this.prismaService.quest.update({
+            where: {
+                quest_id: completedTask.quest.quest_id,
+            },
+            data: {
+                isCompleted: true,
+            },
+        });
+
+        return completedTask;
     }
 
     async deleteTask(taskId: string) {

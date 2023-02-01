@@ -146,7 +146,7 @@ model Task {
   isInQuest        Boolean  @default(false)
   quest            Quest?   @relation(fields: [questId], references: [quest_id], name: "quest_consists_of_tasks")
   questId          Int?
-  isCurrentInQuest Boolean?
+  isCurrentInQuest Boolean  @default(false)
 
   createdAt DateTime
   updatedAt DateTime
@@ -182,6 +182,7 @@ model Quest {
   type          QuestTypeOnQuests[] @relation(name: "quest_has_types")
   isStarted     Boolean             @default(false)
   isCompleted   Boolean             @default(false)
+  isFailed      Boolean             @default(false)
   tasks         Task[]              @relation(name: "quest_consists_of_tasks")
   user          Person              @relation(fields: [userId], references: [user_id], name: "quest_belongs_to_user")
   userId        Int
