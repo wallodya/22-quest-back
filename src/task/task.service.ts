@@ -260,9 +260,11 @@ export class TaskService {
             }
 
             if (completedTask.isInQuest) {
+                this.logger.log("Task is in quest");
                 return this.switchCurrentTask(completedTask);
             }
 
+            this.logger.log("Task isn't in quest");
             this.logger.debug("||| Task marked as completed");
             return completedTask;
         } catch (err) {
@@ -274,6 +276,7 @@ export class TaskService {
     }
 
     async switchCurrentTask(completedTask: CompletedTask) {
+        this.logger.debug("||| switching current task in quest...");
         const nextTask = await this.prismaService.task.findFirst({
             where: {
                 AND: {
@@ -298,10 +301,11 @@ export class TaskService {
                     isCurrentInQuest: true,
                 },
             });
+            this.logger.debug("||| Current task switched...");
             return currentTask;
         }
 
-        await this.prismaService.quest.update({
+        const completedQuest = await this.prismaService.quest.update({
             where: {
                 quest_id: completedTask.quest.quest_id,
             },
@@ -310,7 +314,8 @@ export class TaskService {
             },
         });
 
-        return completedTask;
+        this.logger.debug("||| No next task: quest completed...");
+        return completedQuest;
     }
 
     async deleteTask(taskId: string) {
