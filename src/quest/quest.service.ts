@@ -26,11 +26,23 @@ export class QuestService {
             const allQuests = await this.prismaService.quest.findMany({
                 orderBy: { quest_id: "asc" },
                 include: {
-                    tasks: true,
                     author: {
                         select: {
                             uuid: true,
                             login: true,
+                        },
+                    },
+                    tasks: {
+                        include: {
+                            types: {
+                                select: {
+                                    type: {
+                                        select: {
+                                            name: true,
+                                        },
+                                    },
+                                },
+                            },
                         },
                     },
                 },
@@ -51,10 +63,30 @@ export class QuestService {
                     uniqueQuestId: questId,
                 },
                 include: {
-                    tasks: true,
+                    tasks: {
+                        include: {
+                            types: {
+                                select: {
+                                    type: {
+                                        select: {
+                                            name: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
             });
-            return quest;
+            return {
+                ...quest,
+                tasks: quest.tasks.map((task) => {
+                    return {
+                        ...task,
+                        types: task.types.map((type) => type.type.name),
+                    };
+                }),
+            };
         } catch (err) {
             this.logger.warn("||| Couldn't get quest");
             this.logger.warn(err);
@@ -232,7 +264,7 @@ export class QuestService {
                 },
             });
 
-            this.logger.warn("||| Quest marked as started");
+            this.logger.debug("||| Quest marked as started");
             return quest;
         } catch (err) {
             this.logger.warn("||| Couldn't mark quest as started");
