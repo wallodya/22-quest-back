@@ -10,6 +10,9 @@ async function bootstrap() {
     const logger = new Logger(bootstrap.name);
     const app = await NestFactory.create(AppModule);
     app.use(cookieParser());
+    app.enableCors({
+        origin: "*",
+    });
     await app.listen(PORT, LOCALHOST_IP);
     logger.log(`App is listening on ${LOCALHOST_IP}:${PORT}`);
 }
