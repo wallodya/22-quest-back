@@ -51,7 +51,9 @@ export class TokenService {
     validateToken(token: string) {
         this.logger.verbose("Validating token...");
 
+        console.log("token", token);
         const decodedToken = this.decodeToken(token) as JwtToken;
+        console.log("decodedToken", decodedToken);
         const expTime = new Date(decodedToken.exp * 1000);
         const currentTime = new Date(Date.now());
 
@@ -126,9 +128,12 @@ export class TokenService {
 
     async removeToken(refreshToken: string) {
         this.logger.verbose("Removing token...");
-        const {
-            sub: { uuid },
-        } = this.decodeToken(refreshToken) as RefreshToken;
+        // const {
+        //     sub: { uuid },
+        // } = this.decodeToken(refreshToken) as RefreshToken;
+        const token = this.decodeToken(refreshToken) as RefreshToken;
+        this.logger.log("token: ", token);
+        const { sub: uuid } = token;
         const sessions = await this.userService.getUserSessions(uuid);
         const validatedSessions = await Promise.all(
             sessions.tokens.map(async (session) => {
@@ -183,12 +188,16 @@ export class TokenService {
         const req = RequestContext.currentContext.req;
         const refreshToken: string =
             req.cookies[this.tokenConst.REFRESH_TOKEN_NAME];
+        console.log("refreshToken");
+        console.dir(req);
         return refreshToken;
     }
 
     getAccessToken() {
         const req = RequestContext.currentContext.req;
         const accessToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+        const accessToken2 = ExtractJwt.fromHeader("authorization")(req);
+        this.logger.log("accessToken2", accessToken2);
         return accessToken;
     }
 

@@ -18,6 +18,7 @@ export class AuthService {
     async logout() {
         this.logger.debug("||| Closing session...");
         const refreshToken = this.tokenSerice.getRefreshToken();
+        this.logger.log("refreshToken: ", refreshToken);
         try {
             this.tokenSerice.removeToken(refreshToken);
             this.tokenSerice.clearTokens();
@@ -39,12 +40,16 @@ export class AuthService {
         ));
 
         if (isLoginTaken) {
+            this.logger.verbose("Login is taken");
+            this.logger.debug("||| User was not created");
             throw new BadRequestException(
                 "User with this login already exists",
             );
         }
 
         if (isEmailTaken) {
+            this.logger.verbose("E-mail is taken");
+            this.logger.debug("||| User was not created");
             throw new BadRequestException(
                 "User with this email already exists",
             );

@@ -38,17 +38,25 @@ export class JwtAuthGuard extends AuthGuard(AUTH_STRATEGIES.JWT) {
         try {
             this.logger.verbose("Checking access token...");
             const accessToken = this.tokenService.getAccessToken();
+            this.logger.log("Access token: ", accessToken);
             if (this.validateAccessToken(accessToken)) {
                 const user = this.tokenService.decodeToken(accessToken)
                     .sub as UserSessions;
                 await this.attachUser(context, user);
                 return true;
             }
+        } catch (err) {
+            this.logger.warn("Error while validating access token: ", err);
+        }
 
-            this.logger.verbose("Access token is not valid");
+        this.logger.verbose("Access token is not valid");
+
+        try {
             this.logger.verbose("Checking refresh token...");
 
             const refreshToken = this.tokenService.getRefreshToken();
+
+            this.logger.log("refresh token: ", refreshToken);
             if (!refreshToken)
                 throw new UnauthorizedException("Refresh token is not set");
 
@@ -64,7 +72,7 @@ export class JwtAuthGuard extends AuthGuard(AUTH_STRATEGIES.JWT) {
             this.logger.debug("||| Token verification success");
             return true;
         } catch (err) {
-            this.logger.warn(err);
+            this.logger.warn("Error while validating refresh token", err);
             this.tokenService.clearTokens();
             this.logger.debug("||| Token verification fail");
             return false;

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { CookieOptions } from "express";
 
 @Injectable()
 export class TokenConst {
@@ -14,10 +15,12 @@ export class TokenConst {
     readonly REFRESH_TOKEN_EXPIRATION = this.REFRESH_TOKEN_EXPIRATION_D + "d";
     readonly REFRESH_TOKEN_EXPIRATION_MS =
         this.REFRESH_TOKEN_EXPIRATION_D * this.MS_IN_A_DAY;
-    readonly REFRESH_TOKEN_COOKIE_OPTIONS = {
+    readonly REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
         httpOnly: true,
-        expires: true,
+        // expires: true,
         maxAge: this.MS_IN_A_DAY,
+        sameSite: "none",
+        secure: true,
     };
     readonly REFRESH_TOKEN_NAME = "Refresh-Token";
 }
