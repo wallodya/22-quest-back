@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { Response } from "express";
 import { RequestContext } from "nestjs-request-context";
 import { ExtractJwt } from "passport-jwt";
 import { PrismaService } from "prisma.service";
@@ -51,9 +52,7 @@ export class TokenService {
     validateToken(token: string) {
         this.logger.verbose("Validating token...");
 
-        console.log("token", token);
         const decodedToken = this.decodeToken(token) as JwtToken;
-        console.log("decodedToken", decodedToken);
         const expTime = new Date(decodedToken.exp * 1000);
         const currentTime = new Date(Date.now());
 
@@ -133,7 +132,7 @@ export class TokenService {
         // } = this.decodeToken(refreshToken) as RefreshToken;
         const token = this.decodeToken(refreshToken) as RefreshToken;
         this.logger.log("token: ", token);
-        const { sub: uuid } = token;
+        const uuid = token.sub.uuid;
         const sessions = await this.userService.getUserSessions(uuid);
         const validatedSessions = await Promise.all(
             sessions.tokens.map(async (session) => {
@@ -188,16 +187,15 @@ export class TokenService {
         const req = RequestContext.currentContext.req;
         const refreshToken: string =
             req.cookies[this.tokenConst.REFRESH_TOKEN_NAME];
-        console.log("refreshToken");
-        console.dir(req);
+        this.logger.log("req.cookies", req.cookies);
         return refreshToken;
     }
 
     getAccessToken() {
         const req = RequestContext.currentContext.req;
-        const accessToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-        const accessToken2 = ExtractJwt.fromHeader("authorization")(req);
-        this.logger.log("accessToken2", accessToken2);
+        const accessToken =
+            ExtractJwt.fromAuthHeaderAsBearerToken()(req) ||
+            ExtractJwt.fromHeader("authorization")(req);
         return accessToken;
     }
 
@@ -256,12 +254,13 @@ export class TokenService {
         this.logger.verbose("Setting Refresh-Token cookie...");
         const request = RequestContext.currentContext.req;
         request.cookies[this.tokenConst.REFRESH_TOKEN_NAME] = refreshToken;
-        const response = RequestContext.currentContext.res;
+        const response = RequestContext.currentContext.res as Response;
         response.cookie(
             this.tokenConst.REFRESH_TOKEN_NAME,
             refreshToken,
             this.tokenConst.REFRESH_TOKEN_COOKIE_OPTIONS,
         );
+        this.logger.log("Res cookies: ", response);
     }
 
     private updateRemoveRTTimeout(newRefreshToken: string) {

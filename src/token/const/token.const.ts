@@ -17,10 +17,9 @@ export class TokenConst {
         this.REFRESH_TOKEN_EXPIRATION_D * this.MS_IN_A_DAY;
     readonly REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
         httpOnly: true,
-        // expires: true,
-        maxAge: this.MS_IN_A_DAY,
-        sameSite: "none",
-        secure: true,
+        maxAge: this.REFRESH_TOKEN_EXPIRATION_MS,
+        // sameSite: "none",
+        // secure: true,
     };
     readonly REFRESH_TOKEN_NAME = "Refresh-Token";
 }

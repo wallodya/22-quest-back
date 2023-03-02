@@ -15,14 +15,12 @@ async function bootstrap() {
         exposedHeaders: ["Authorization"],
         allowedHeaders: [
             "Authorization",
+            "authorization",
             "Content-Type",
             "Origin",
-            "authorization",
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         credentials: true,
-        // preflightContinue: true,
-        // optionsSuccessStatus: 200,
     });
     await app.listen(PORT, LOCALHOST_IP);
     logger.log(`App is listening on ${LOCALHOST_IP}:${PORT}`);
