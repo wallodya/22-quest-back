@@ -20,7 +20,7 @@ export class AuthService {
         const refreshToken = this.tokenSerice.getRefreshToken();
         this.logger.log("refreshToken: ", refreshToken);
         try {
-            this.tokenSerice.removeToken(refreshToken);
+            await this.tokenSerice.removeToken(refreshToken);
             this.tokenSerice.clearTokens();
         } catch (err) {
             this.logger.warn(err);
