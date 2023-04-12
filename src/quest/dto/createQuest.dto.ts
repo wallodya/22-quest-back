@@ -1,13 +1,4 @@
-import { TaskTypeEnum } from "@prisma/client";
-import {
-    IsArray,
-    IsEnum,
-    IsString,
-    MaxLength,
-    MinLength,
-    ValidateNested,
-} from "class-validator";
-import CreateTaskDto from "task/dto/createTask.dto";
+import { IsString, MaxLength, MinLength } from "class-validator";
 
 export class CreateQuestDto {
     @IsString()
@@ -17,9 +8,9 @@ export class CreateQuestDto {
 
     @IsString()
     @MaxLength(200)
-    readonly description: string;
+    readonly description?: string;
 
-    @IsArray()
-    @ValidateNested()
-    readonly tasks: CreateTaskDto[];
+    // @IsArray()
+    // @ValidateNested()
+    // readonly tasks: CreateTaskDto[];
 }

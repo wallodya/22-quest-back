@@ -5,18 +5,15 @@ import {
     Get,
     Logger,
     Param,
-    ParseUUIDPipe,
     Patch,
     Post,
     Query,
     Req,
 } from "@nestjs/common";
-import { RoleEnum, TaskType, TaskTypeEnum } from "@prisma/client";
+import { RoleEnum, TaskTypeEnum } from "@prisma/client";
 import { Request } from "express";
-import { IsOwnerPipe } from "pipes/isOwner.pipe";
 import { TaskOwnerPipe } from "pipes/TaskOwner.pipe";
 import { ValidationPipe } from "pipes/validation.pipe";
-import { QuestController } from "quest/quest.controller";
 import { Roles } from "roles/decorators/roles.decorator";
 import { UserPublic } from "user/types/user";
 import CreateTaskDto from "./dto/createTask.dto";
@@ -36,8 +33,14 @@ export class TaskController {
     }
 
     @Get()
-    getAllForUser(@Query("user") userId: string) {
-        return this.taskService.getAllForUser(userId);
+    getAllForUser(@Req() req: Request) {
+        const user = req.user as UserPublic;
+        return this.taskService.getAllForUser(user.uuid);
+    }
+
+    @Get("q")
+    getForQuest(@Param("questId") questId: string) {
+        return this.taskService.getAllForQuest(questId);
     }
 
     @Post()
@@ -49,6 +52,23 @@ export class TaskController {
             ...dto,
             user: req.user as UserPublic,
         });
+    }
+
+    @Post("q")
+    addTaskToQuest(
+        @Body(new ValidationPipe()) dto: CreateTaskDto,
+        @Req() req: Request,
+        @Query("questId") questId: string,
+    ) {
+        this.logger.verbose("add task request: ", questId);
+        return this.taskService.createTask(
+            {
+                ...dto,
+                user: req.user as UserPublic,
+            },
+            true,
+            questId,
+        );
     }
 
     @Patch("check")

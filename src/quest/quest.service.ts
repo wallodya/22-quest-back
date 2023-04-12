@@ -11,6 +11,21 @@ import { UserService } from "user/user.service";
 import { v4 as uuidv4 } from "uuid";
 import { CreateQuestDto } from "./dto/createQuest.dto";
 
+const QUEST_SELECT_FIELDS = {
+    quest_id: false,
+    uniqueQuestId: true,
+    title: true,
+    description: true,
+    isStarted: true,
+    isCompleted: true,
+    isFailed: true,
+    userId: true,
+    authorId: true,
+    createdAt: true,
+    updatedAt: true,
+    startedAt: true,
+};
+
 @Injectable()
 export class QuestService {
     private readonly logger = new Logger(QuestService.name);
@@ -20,18 +35,18 @@ export class QuestService {
         private userService: UserService,
     ) {}
 
-    async getAll() {
+    async getAll(userId: string) {
         this.logger.debug("||| Getting list of all Quests...");
         try {
             const allQuests = await this.prismaService.quest.findMany({
-                orderBy: { quest_id: "asc" },
-                include: {
-                    author: {
-                        select: {
-                            uuid: true,
-                            login: true,
-                        },
-                    },
+                // orderBy: { quest_id: "asc" },
+                select: {
+                    ...QUEST_SELECT_FIELDS,
+                    // author: {
+                    //     select: {
+                    //         uuid: true,
+                    //     },
+                    // },
                     tasks: {
                         include: {
                             types: {
@@ -47,7 +62,13 @@ export class QuestService {
                     },
                 },
             });
-            return allQuests;
+            return allQuests.map((quest) => ({
+                ...quest,
+                tasks: quest.tasks.map((task) => ({
+                    ...task,
+                    types: task.types.map((type) => type.type.name),
+                })),
+            })); // TODO turn into reusable utility function
         } catch (err) {
             this.logger.warn("||| Couldn't get all Quests");
             this.logger.warn(err);
@@ -94,17 +115,52 @@ export class QuestService {
         }
     }
 
+    // TODO figure out when to use get, getAll and getAllForUser and which ones are actually necessary
     async getAllForUser(userId: string) {
         this.logger.debug("||| Getting quests for user...");
         try {
             const allUserQuests = await this.prismaService.quest.findMany({
+                select: {
+                    ...QUEST_SELECT_FIELDS,
+                    tasks: {
+                        include: {
+                            types: {
+                                select: {
+                                    type: {
+                                        select: {
+                                            name: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    user: {
+                        select: {
+                            uuid: true,
+                        },
+                    },
+                    author: {
+                        select: {
+                            uuid: true,
+                        },
+                    },
+                },
                 where: {
                     user: {
                         uuid: userId,
                     },
                 },
             });
-            return allUserQuests;
+            return allUserQuests.map((quest) => ({
+                ...quest,
+                userId: quest.user.uuid,
+                author: quest.author.uuid,
+                tasks: quest.tasks.map((task) => ({
+                    ...task,
+                    types: task.types.map((type) => type.type.name),
+                })),
+            }));
         } catch (err) {
             this.logger.warn("||| Couldn't get all quests");
             const doesUserExist = await this.userService.getUserByUUID(userId);
@@ -120,17 +176,18 @@ export class QuestService {
 
     async create(dto: CreateQuestDto & { user: UserPublic }) {
         this.logger.debug("||| Creating quest...");
-        const tasks = await Promise.all(
-            dto.tasks.map((task) =>
-                this.taskService.createTask({ ...task, user: dto.user }, true),
-            ),
-        );
+        // const tasks = await Promise.all(
+        //     dto.tasks.map((task) =>
+        //         this.taskService.createTask({ ...task, user: dto.user }, true),
+        //     ),
+        // );
         try {
             const uniqueQuestId = uuidv4();
             const currentTime = new Date();
             const quest = await this.prismaService.quest.create({
                 data: {
                     ...dto,
+                    description: dto.description ?? "",
                     uniqueQuestId,
                     createdAt: currentTime,
                     updatedAt: currentTime,
@@ -144,17 +201,27 @@ export class QuestService {
                             uuid: dto.user.uuid,
                         },
                     },
-                    tasks: {
-                        connect: tasks.map((task) => {
-                            return { uniqueTaskId: task.uniqueTaskId };
-                        }),
+                },
+                select: {
+                    ...QUEST_SELECT_FIELDS,
+                    quest_id: false,
+                    user: {
+                        select: {
+                            uuid: true,
+                        },
+                    },
+                    author: {
+                        select: {
+                            uuid: true,
+                        },
                     },
                 },
-                include: {
-                    tasks: true,
-                },
             });
-            return quest;
+            return {
+                ...quest,
+                author: quest.author.uuid,
+                userId: quest.user.uuid,
+            };
         } catch (err) {
             this.logger.warn("||| Couldn't create a quest");
             this.logger.warn(err);

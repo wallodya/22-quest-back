@@ -1,5 +1,4 @@
 import {
-    Prisma,
     TaskDifficultyEnum,
     TaskPriorityEnum,
     TaskTypeEnum,
@@ -12,24 +11,19 @@ import {
     IsNumber,
     IsOptional,
     IsString,
-    Max,
     MaxLength,
     MinLength,
 } from "class-validator";
 
 class CreateTaskDto {
     @IsString()
-    @MinLength(4)
+    @MinLength(1)
     @MaxLength(20)
     readonly title: string;
 
     @IsString()
     @MaxLength(140)
     readonly text?: string;
-
-    @IsString()
-    @IsEnum(TaskDifficultyEnum)
-    readonly difficulty: TaskDifficultyEnum;
 
     @IsString()
     @IsEnum(TaskPriorityEnum)
@@ -39,11 +33,11 @@ class CreateTaskDto {
     @IsIn(Object.values(TaskTypeEnum), { each: true })
     readonly types: TaskTypeEnum[];
 
-    // @IsDate()
+    @IsString({ message: "startTime must be a string" })
     @IsOptional()
     readonly startTime?: Date;
 
-    // @IsDate()
+    @IsString({ message: "endTime must be a string" })
     @IsOptional()
     readonly endTime?: Date;
 

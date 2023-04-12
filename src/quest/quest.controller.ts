@@ -22,16 +22,16 @@ export class QuestController {
 
     @Roles(RoleEnum.ADMIN, RoleEnum.DEV)
     @Get("all")
-    getAll() {
-        return this.questService.getAll();
-    }
-
-    @Get("u")
-    getAllForUser(@Query("uuid") uuid: string) {
-        return this.questService.getAllForUser(uuid);
+    getAll(@Req() req: Request) {
+        return this.questService.getAll((req.user as UserPublic).uuid);
     }
 
     @Get()
+    getAllForUser(@Req() req: Request) {
+        return this.questService.getAllForUser((req.user as UserPublic).uuid);
+    }
+
+    @Get("q")
     getOne(@Query("id") questId: string) {
         return this.questService.get(questId);
     }

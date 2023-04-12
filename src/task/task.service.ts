@@ -16,10 +16,44 @@ import CreateTaskDto from "./dto/createTask.dto";
 import { CreateTaskTypeDto } from "./dto/createTaskType.dto";
 import { CompletedTask } from "./types/task.types";
 import { getTaskFailTimoutName } from "./utils/task.utils";
+import { QuestService } from "quest/quest.service";
 
 @Injectable()
 export class TaskService {
     private readonly logger = new Logger(TaskService.name);
+
+    readonly TASK_SELECT_FIELDS = {
+        userId: true,
+        uniqueTaskId: true,
+        isCompleted: true,
+        isFailed: true,
+        title: true,
+        text: true,
+        types: {
+            select: {
+                type: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        },
+        startTime: true,
+        endTime: true,
+        duration: true,
+        repeatTimes: true, // TODO rename to repeatCount
+        priority: true,
+        isInQuest: true,
+        questId: false,
+        quest: {
+            select: {
+                uniqueQuestId: true,
+            },
+        },
+        isCurrentInQuest: true,
+        createdAt: true,
+        updatedAt: true,
+    };
 
     constructor(
         private prismaService: PrismaService,
@@ -48,9 +82,19 @@ export class TaskService {
                     user: {
                         uuid: userid,
                     },
+                    isInQuest: false,
                 },
+                select: this.TASK_SELECT_FIELDS,
             });
-            return allUserTasks;
+            return allUserTasks.map((task) => {
+                const { userId, ...taskRes } = task;
+                return {
+                    ...taskRes,
+                    uniqueQuestId: taskRes.quest?.uniqueQuestId ?? null,
+                    types: taskRes.types.map((type) => type.type.name),
+                    repeatCount: taskRes.repeatTimes,
+                };
+            });
         } catch (err) {
             this.logger.warn("||| Couldn't get all tasks for user");
             const doesUserExist = await this.userService.getUserByUUID(userid);
@@ -66,9 +110,50 @@ export class TaskService {
         }
     }
 
+    async getAllForQuest(questId: string) {
+        this.logger.debug("||| Getting tasks for quest: ", questId);
+        try {
+            const tasks = await this.prismaService.task.findMany({
+                where: {
+                    isInQuest: true,
+                    quest: {
+                        uniqueQuestId: questId,
+                    },
+                },
+                select: this.TASK_SELECT_FIELDS,
+            });
+            return tasks.map((task) => {
+                const { repeatTimes, userId, ...taskRes } = task;
+                return {
+                    ...taskRes,
+                    uniqueQuestId: taskRes.quest.uniqueQuestId,
+                    types: taskRes.types.map((type) => type.type.name),
+                    repeatCount: task.repeatTimes,
+                };
+            });
+        } catch (err) {
+            this.logger.warn("||| couldn't get tasks for quest");
+            const doesQuestExist = !!(await this.prismaService.quest.findFirst({
+                where: {
+                    uniqueQuestId: questId,
+                },
+            }));
+            if (!doesQuestExist) {
+                throw new BadRequestException(
+                    `Quest with id ${questId} doesn't exist`,
+                );
+            }
+            this.logger.warn(err);
+            throw new ServiceUnavailableException(
+                "Couldn't get all tasks for quest",
+            );
+        }
+    }
+
     async createTask(
         dto: CreateTaskDto & { user: UserPublic },
         isInQuest = false,
+        questId?: string,
     ) {
         this.logger.debug("||| Creating a task...");
         this.validateDto(dto);
@@ -76,21 +161,42 @@ export class TaskService {
             const currentTime = new Date();
             const taskId = uuidv4();
             const userId = dto.user.uuid;
-            const newTaskWOTypes = await this.prismaService.task.create({
-                data: {
-                    ...dto,
-                    uniqueTaskId: taskId,
-                    createdAt: currentTime,
-                    updatedAt: currentTime,
-                    types: {},
-                    isInQuest: isInQuest,
-                    user: {
-                        connect: {
-                            uuid: userId,
-                        },
-                    },
-                },
-            });
+            const newTaskWOTypes = isInQuest
+                ? await this.prismaService.task.create({
+                      data: {
+                          ...dto,
+                          uniqueTaskId: taskId,
+                          createdAt: currentTime,
+                          updatedAt: currentTime,
+                          types: {},
+                          isInQuest: isInQuest,
+                          user: {
+                              connect: {
+                                  uuid: userId,
+                              },
+                          },
+                          quest: {
+                              connect: {
+                                  uniqueQuestId: questId,
+                              },
+                          },
+                      },
+                  })
+                : await this.prismaService.task.create({
+                      data: {
+                          ...dto,
+                          uniqueTaskId: taskId,
+                          createdAt: currentTime,
+                          updatedAt: currentTime,
+                          types: {},
+                          isInQuest: isInQuest,
+                          user: {
+                              connect: {
+                                  uuid: userId,
+                              },
+                          },
+                      },
+                  });
 
             const newTask = await this.attachTypes(newTaskWOTypes, dto.types);
             const isPeriodic = dto.types.includes(TaskTypeEnum.PERIODIC);
@@ -103,6 +209,7 @@ export class TaskService {
             return newTask;
         } catch (err) {
             this.logger.warn("||| Couldn't create a task");
+            this.logger.warn(err);
             const userTasks = await this.prismaService.task.findMany({
                 where: {
                     user: {
@@ -139,21 +246,22 @@ export class TaskService {
                     isFailed: true,
                     updatedAt: currentTime,
                 },
-                select: {
-                    uniqueTaskId: true,
-                    types: {
-                        select: {
-                            type: {
-                                select: {
-                                    name: true,
-                                },
-                            },
-                        },
-                    },
-                    priority: true,
-                    isInQuest: true,
-                    quest: true,
-                },
+                // select: {
+                //     uniqueTaskId: true,
+                //     types: {
+                //         select: {
+                //             type: {
+                //                 select: {
+                //                     name: true,
+                //                 },
+                //             },
+                //         },
+                //     },
+                //     priority: true,
+                //     isInQuest: true,
+                //     quest: true,
+                // },
+                select: { ...this.TASK_SELECT_FIELDS, quest: true },
             });
 
             const isPeriodic = failedTask.types.some(
@@ -204,6 +312,7 @@ export class TaskService {
                     },
                     updatedAt: currentTime,
                 },
+                select: this.TASK_SELECT_FIELDS,
             });
             if (checkedTask.repeatTimes === 0) {
                 return this.completeTask(taskId);
@@ -230,24 +339,29 @@ export class TaskService {
                     isCompleted: true,
                     updatedAt: currentTime,
                 },
+                // select: {
+                //     task_id: true,
+                //     isInQuest: true,
+                //     quest: {
+                //         select: {
+                //             quest_id: true,
+                //         },
+                //     },
+                //     uniqueTaskId: true,
+                //     types: {
+                //         select: {
+                //             type: {
+                //                 select: {
+                //                     name: true,
+                //                 },
+                //             },
+                //         },
+                //     },
+                // },
                 select: {
+                    ...this.TASK_SELECT_FIELDS,
+                    quest: true,
                     task_id: true,
-                    isInQuest: true,
-                    quest: {
-                        select: {
-                            quest_id: true,
-                        },
-                    },
-                    uniqueTaskId: true,
-                    types: {
-                        select: {
-                            type: {
-                                select: {
-                                    name: true,
-                                },
-                            },
-                        },
-                    },
                 },
             });
 
@@ -266,7 +380,8 @@ export class TaskService {
 
             this.logger.log("Task isn't in quest");
             this.logger.debug("||| Task marked as completed");
-            return completedTask;
+            const { task_id, quest, ...completedTaskRes } = completedTask;
+            return completedTaskRes;
         } catch (err) {
             this.logger.warn("||| Task wasn't marked as completed");
             await this.checkIfExists(taskId);
@@ -456,6 +571,7 @@ export class TaskService {
                     uniqueTaskId: taskId,
                 },
                 data: {
+                    isInQuest: true,
                     quest: {
                         connect: {
                             uniqueQuestId: questId,
@@ -510,8 +626,9 @@ export class TaskService {
                     },
                 });
             this.logger.warn("||| Types attached to a task");
+            const { task_id, difficulty, ...newTask } = task;
             return {
-                ...task,
+                ...newTask,
                 types: newTaskTypes.map((type) => type.type.name),
             };
         } catch (err) {
@@ -565,6 +682,8 @@ export class TaskService {
 
     private validateDto(dto: CreateTaskDto) {
         this.logger.verbose("Validaing CreateTaskDto...");
+        this.logger.verbose("DTO:");
+        console.dir(dto);
         const isBasic = dto.types.includes(TaskTypeEnum.BASIC);
         const hasMultipleTypes = dto.types.length > 1;
         if (isBasic && hasMultipleTypes) {
@@ -576,7 +695,7 @@ export class TaskService {
         const isPeriodic = dto.types.includes(TaskTypeEnum.PERIODIC);
         if (isPeriodic) {
             const hasTimeFileds = dto.startTime && dto.endTime;
-            if (hasTimeFileds) {
+            if (!hasTimeFileds) {
                 throw new BadRequestException(
                     `${TaskTypeEnum.PERIODIC} task types must have "startTime" and "endTime" properties`,
                 );
