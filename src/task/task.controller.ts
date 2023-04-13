@@ -39,7 +39,8 @@ export class TaskController {
     }
 
     @Get("q")
-    getForQuest(@Param("questId") questId: string) {
+    getForQuest(@Query("questId") questId: string) {
+        this.logger.verbose("Gettin tasks for quest: ", questId);
         return this.taskService.getAllForQuest(questId);
     }
 
@@ -60,7 +61,6 @@ export class TaskController {
         @Req() req: Request,
         @Query("questId") questId: string,
     ) {
-        this.logger.verbose("add task request: ", questId);
         return this.taskService.createTask(
             {
                 ...dto,

@@ -115,9 +115,11 @@ export class TaskService {
         try {
             const tasks = await this.prismaService.task.findMany({
                 where: {
-                    isInQuest: true,
-                    quest: {
-                        uniqueQuestId: questId,
+                    AND: {
+                        isInQuest: true,
+                        quest: {
+                            uniqueQuestId: questId,
+                        },
                     },
                 },
                 select: this.TASK_SELECT_FIELDS,
@@ -181,6 +183,13 @@ export class TaskService {
                               },
                           },
                       },
+                      select: {
+                          ...this.TASK_SELECT_FIELDS,
+                          quest: true,
+                          userId: true,
+                          task_id: true,
+                          difficulty: true,
+                      },
                   })
                 : await this.prismaService.task.create({
                       data: {
@@ -196,6 +205,13 @@ export class TaskService {
                               },
                           },
                       },
+                      select: {
+                          ...this.TASK_SELECT_FIELDS,
+                          quest: true,
+                          userId: true,
+                          task_id: true,
+                          difficulty: true,
+                      },
                   });
 
             const newTask = await this.attachTypes(newTaskWOTypes, dto.types);
@@ -206,7 +222,12 @@ export class TaskService {
                 this.setFailTaskTimeout(taskId, failsIn);
             }
             this.logger.debug("||| Task created");
-            return newTask;
+            const { userId: __, questId: _, ...newTaskRes } = newTask;
+            return {
+                ...newTaskRes,
+                uniqueQuestId: isInQuest ? questId : null,
+                repeatCount: newTaskRes.repeatTimes,
+            };
         } catch (err) {
             this.logger.warn("||| Couldn't create a task");
             this.logger.warn(err);
@@ -261,7 +282,14 @@ export class TaskService {
                 //     isInQuest: true,
                 //     quest: true,
                 // },
-                select: { ...this.TASK_SELECT_FIELDS, quest: true },
+                select: {
+                    ...this.TASK_SELECT_FIELDS,
+                    // quest: {
+                    //     select: {
+                    //         quest_id: true,
+                    //     },
+                    // },
+                },
             });
 
             const isPeriodic = failedTask.types.some(
@@ -271,24 +299,31 @@ export class TaskService {
                 this.removeFailTaskTimeOut(failedTask.uniqueTaskId);
             }
 
-            const isImoprtant =
-                failedTask.priority === "MEDIUM" ||
-                failedTask.priority === "URGENT";
-            const { isInQuest } = failedTask;
-            if (isImoprtant && isInQuest) {
-                const failedQuest = await this.prismaService.quest.update({
-                    where: {
-                        quest_id: failedTask.quest.quest_id,
-                    },
-                    data: {
-                        isFailed: true,
-                    },
-                });
-                return failedQuest;
-            }
+            // const isImoprtant =
+            //     failedTask.priority === "MEDIUM" ||
+            //     failedTask.priority === "URGENT";
+            // const { isInQuest } = failedTask;
+            // if (isImoprtant && isInQuest) {
+            //     const failedQuest = await this.prismaService.quest.update({
+            //         where: {
+            //             quest_id: failedTask.quest.quest_id,
+            //         },
+            //         data: {
+            //             isFailed: true,
+            //         },
+            //     });
+            //     const { quest_id, userId, authorId, ...failedQuestRes } =
+            //         failedQuest;
+            //     return failedQuestRes;
+            // }
 
             this.logger.debug("||| Task was marked failed");
-            return failedTask;
+            const { userId, questId, quest, ...failedTaskRes } = failedTask;
+            return {
+                ...failedTaskRes,
+                uniqueQuestId: failedTask.quest.uniqueQuestId,
+                types: failedTask.types.map((type) => type.type.name),
+            };
         } catch (err) {
             this.logger.warn("||| Couldn't fail the task");
             await this.checkIfExists(taskId);
@@ -318,7 +353,12 @@ export class TaskService {
                 return this.completeTask(taskId);
             }
             this.logger.debug("||| Task was checked");
-            return checkedTask;
+            const { userId, quest, questId, ...checkedTaskRes } = checkedTask;
+            return {
+                ...checkedTaskRes,
+                uniqueQuestId: checkedTask.quest.uniqueQuestId,
+                types: checkedTask.types.map((type) => type.type.name),
+            };
         } catch (err) {
             this.logger.warn("||| Task wasn't checked");
             await this.checkIfExists(taskId);
@@ -373,15 +413,27 @@ export class TaskService {
                 this.removeFailTaskTimeOut(completedTask.uniqueTaskId);
             }
 
-            if (completedTask.isInQuest) {
-                this.logger.log("Task is in quest");
-                return this.switchCurrentTask(completedTask);
-            }
+            // if (completedTask.isInQuest) {
+            //     this.logger.log("Task is in quest");
+            //     return this.switchCurrentTask(completedTask);
+            // }
 
             this.logger.log("Task isn't in quest");
             this.logger.debug("||| Task marked as completed");
-            const { task_id, quest, ...completedTaskRes } = completedTask;
-            return completedTaskRes;
+            const {
+                task_id,
+                quest,
+                userId,
+                questId,
+                repeatTimes,
+                ...completedTaskRes
+            } = completedTask;
+            return {
+                ...completedTaskRes,
+                uniqueQuestId: completedTask.quest.uniqueQuestId,
+                types: completedTask.types.map((type) => type.type.name),
+                repeatCount: completedTask.repeatTimes ?? null,
+            };
         } catch (err) {
             this.logger.warn("||| Task wasn't marked as completed");
             await this.checkIfExists(taskId);
