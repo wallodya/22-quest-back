@@ -21,6 +21,7 @@ class CreateTaskDto {
     @MaxLength(20)
     readonly title: string;
 
+    @IsOptional()
     @IsString()
     @MaxLength(140)
     readonly text?: string;

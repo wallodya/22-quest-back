@@ -321,7 +321,9 @@ export class TaskService {
             const { userId, questId, quest, ...failedTaskRes } = failedTask;
             return {
                 ...failedTaskRes,
-                uniqueQuestId: failedTask.quest.uniqueQuestId,
+                uniqueQuestId: failedTask.isInQuest
+                    ? failedTask.quest.uniqueQuestId
+                    : null,
                 types: failedTask.types.map((type) => type.type.name),
             };
         } catch (err) {
@@ -356,7 +358,9 @@ export class TaskService {
             const { userId, quest, questId, ...checkedTaskRes } = checkedTask;
             return {
                 ...checkedTaskRes,
-                uniqueQuestId: checkedTask.quest.uniqueQuestId,
+                uniqueQuestId: checkedTask.isInQuest
+                    ? checkedTask.quest.uniqueQuestId
+                    : null,
                 types: checkedTask.types.map((type) => type.type.name),
             };
         } catch (err) {
@@ -400,7 +404,7 @@ export class TaskService {
                 // },
                 select: {
                     ...this.TASK_SELECT_FIELDS,
-                    quest: true,
+                    quest: false,
                     task_id: true,
                 },
             });
@@ -413,24 +417,40 @@ export class TaskService {
                 this.removeFailTaskTimeOut(completedTask.uniqueTaskId);
             }
 
-            // if (completedTask.isInQuest) {
-            //     this.logger.log("Task is in quest");
-            //     return this.switchCurrentTask(completedTask);
-            // }
+            let uniqueQuestId = null;
+
+            if (completedTask.isInQuest) {
+                this.logger.log("Task is in quest");
+                uniqueQuestId = (
+                    await this.prismaService.task.findFirst({
+                        where: {
+                            uniqueTaskId: completedTask.uniqueTaskId,
+                        },
+                        select: {
+                            quest: {
+                                select: {
+                                    uniqueQuestId: true,
+                                },
+                            },
+                        },
+                    })
+                ).quest.uniqueQuestId;
+                // return this.switchCurrentTask(completedTask);
+            }
 
             this.logger.log("Task isn't in quest");
             this.logger.debug("||| Task marked as completed");
             const {
                 task_id,
-                quest,
+                // quest,
                 userId,
-                questId,
+                // questId,
                 repeatTimes,
                 ...completedTaskRes
             } = completedTask;
             return {
                 ...completedTaskRes,
-                uniqueQuestId: completedTask.quest.uniqueQuestId,
+                uniqueQuestId: uniqueQuestId,
                 types: completedTask.types.map((type) => type.type.name),
                 repeatCount: completedTask.repeatTimes ?? null,
             };
