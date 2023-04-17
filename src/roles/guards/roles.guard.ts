@@ -34,9 +34,9 @@ export class RolesGuard implements CanActivate {
         this.logger.verbose(requiredRoles);
         this.logger.verbose("User roles:");
         this.logger.verbose(userRoles);
-        const isAuthorized = requiredRoles.some((role) =>
-            userRoles?.includes(role),
-        );
+        const isAuthorized = Array.isArray(userRoles)
+            ? requiredRoles.some((role) => userRoles?.includes(role))
+            : false;
         this.logger.debug(
             isAuthorized
                 ? "||| Authorization success"
