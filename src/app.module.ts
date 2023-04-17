@@ -32,11 +32,11 @@ import * as path from "path";
     providers: [
         {
             provide: APP_GUARD,
-            useClass: JwtAuthGuard,
+            useClass: RolesGuard,
         },
         {
             provide: APP_GUARD,
-            useClass: RolesGuard,
+            useClass: JwtAuthGuard,
         },
     ],
 })
