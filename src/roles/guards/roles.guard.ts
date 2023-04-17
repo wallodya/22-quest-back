@@ -24,7 +24,7 @@ export class RolesGuard implements CanActivate {
             this.logger.debug("||| Authorization success");
             return true;
         }
-        const { roles: userRoles } = context.switchToHttp().getRequest().user;
+        const userRoles = context.switchToHttp().getRequest().user?.roles;
         if (userRoles?.includes(RoleEnum.OWNER)) {
             this.logger.verbose("User has OWNER access level");
             this.logger.debug("||| Authorization success");

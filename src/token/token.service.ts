@@ -300,7 +300,14 @@ export class TokenService {
             "\n...",
         );
         const userAgentSession = await this.prismaService.token.findFirst({
-            where: { userAgent: tokenArgs.userAgent },
+            where: {
+                AND: {
+                    userAgent: tokenArgs.userAgent,
+                    user: {
+                        uuid: tokenArgs.user.connect.uuid,
+                    },
+                },
+            },
             include: { user: { select: { user_id: true } } },
         });
 
