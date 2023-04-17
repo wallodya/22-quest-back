@@ -185,9 +185,13 @@ export class TokenService {
 
     getRefreshToken() {
         const req = RequestContext.currentContext.req;
-        const refreshToken: string =
-            req.cookies[this.tokenConst.REFRESH_TOKEN_NAME];
+        const refreshToken =
+            req.cookies[this.tokenConst.REFRESH_TOKEN_NAME] || null;
         this.logger.log("req.cookies", req.cookies);
+        this.logger.log(
+            "req.cookies refreshToken:",
+            req.cookies[this.tokenConst.REFRESH_TOKEN_NAME],
+        );
         return refreshToken;
     }
 
@@ -266,13 +270,15 @@ export class TokenService {
     private updateRemoveRTTimeout(newRefreshToken: string) {
         this.logger.verbose("Updating remove Refresh-Token timeout...");
         const oldRefreshToken = this.getRefreshToken();
-        try {
-            this.schedulerRegistry.deleteTimeout(
-                getTokenExpTimeoutName(oldRefreshToken),
-            );
-        } catch (err) {
-            this.logger.warn("Error in updateRemoveRTTimeout:");
-            this.logger.warn(err);
+        if (oldRefreshToken) {
+            try {
+                this.schedulerRegistry.deleteTimeout(
+                    getTokenExpTimeoutName(oldRefreshToken),
+                );
+            } catch (err) {
+                this.logger.warn("Error in updateRemoveRTTimeout:");
+                this.logger.warn(err);
+            }
         }
         this.setRefreshTokenExpriration({
             expiresIn: this.tokenConst.REFRESH_TOKEN_EXPIRATION_MS,

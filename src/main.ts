@@ -15,6 +15,7 @@ async function bootstrap() {
             "http://localhost:3000",
             "https://todo-proj-93os08ad1-wallodya.vercel.app",
             "https://todo-proj-5e09tdmgm-wallodya.vercel.app",
+            "https://todo-proj-five.vercel.app",
         ],
         exposedHeaders: ["Authorization"],
         allowedHeaders: [
