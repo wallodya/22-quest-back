@@ -17,7 +17,7 @@ async function bootstrap() {
             "https://todo-proj-5e09tdmgm-wallodya.vercel.app",
             "https://todo-proj-five.vercel.app",
         ],
-        exposedHeaders: ["Authorization"],
+        exposedHeaders: ["Authorization", "authorization"],
         allowedHeaders: [
             "Authorization",
             "authorization",

@@ -51,10 +51,9 @@ export class JwtAuthGuard extends AuthGuard(AUTH_STRATEGIES.JWT) {
 
         this.logger.verbose("Access token is not valid");
 
+        const refreshToken = this.tokenService.getRefreshToken();
         try {
             this.logger.verbose("Checking refresh token...");
-
-            const refreshToken = this.tokenService.getRefreshToken();
 
             this.logger.log("refresh token: ", refreshToken);
             if (!refreshToken)
@@ -74,6 +73,7 @@ export class JwtAuthGuard extends AuthGuard(AUTH_STRATEGIES.JWT) {
         } catch (err) {
             this.logger.warn("Error while validating refresh token", err);
             this.tokenService.clearTokens();
+            this.tokenService.removeToken(refreshToken);
             this.logger.debug("||| Token verification fail");
             return false;
         }

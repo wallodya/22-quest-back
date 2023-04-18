@@ -33,9 +33,11 @@ export class TokenService {
     async updateTokens(user: UserPublic) {
         const { accessToken, refreshToken } = await this.generateTokens(user);
         const { ip, headers: reqHeaders } = RequestContext.currentContext.req;
+        const oldRefreshToken = this.getRefreshToken();
         await this.updateRefreshTokens({
             userAgent: reqHeaders["user-agent"],
             ip,
+            oldRefreshToken,
             refreshToken,
             user: {
                 connect: {
@@ -287,7 +289,9 @@ export class TokenService {
         return;
     }
 
-    private async updateRefreshTokens(tokenArgs: Prisma.TokenCreateInput) {
+    private async updateRefreshTokens(
+        tokenArgs: Prisma.TokenCreateInput & { oldRefreshToken: string },
+    ) {
         this.logger.verbose("Updating refresh token...");
 
         const newRefreshToken = tokenArgs.refreshToken;
@@ -296,8 +300,12 @@ export class TokenService {
             this.tokenConst.bcryptTokenHashSalt,
         );
 
-        const tokenData = { ...tokenArgs, refreshToken: hashedToken };
-        this.logger.log("Hashed token: ", hashedToken);
+        const { oldRefreshToken, ...tokenData } = {
+            ...tokenArgs,
+            refreshToken: hashedToken,
+        };
+
+        this.logger.log("Hashed new token: ", hashedToken);
         this.logger.log("Refresh-Token data:\n", tokenData);
 
         this.logger.verbose(
@@ -318,15 +326,21 @@ export class TokenService {
         });
 
         let session: UserSession;
-        if (userAgentSession) {
+        if (userAgentSession && oldRefreshToken) {
             this.logger.verbose(
                 "User agent already has open session:\n",
                 userAgentSession,
                 "Updating the session with new refresh token...",
             );
+            const hashedOldToken = await bcrypt.hash(
+                oldRefreshToken,
+                this.tokenConst.bcryptTokenHashSalt,
+            );
+            this.logger.log("Hashed old token: ", hashedOldToken);
+
             session = await this.prismaService.token.update({
                 where: {
-                    userAgent: tokenArgs.userAgent,
+                    token_id: userAgentSession.token_id,
                 },
                 data: tokenData,
             });

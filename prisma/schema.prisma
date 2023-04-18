@@ -108,7 +108,7 @@ model Token {
   userId       Int
   refreshToken String @unique
   ip           String
-  userAgent    String @unique
+  userAgent    String
 
   createdAt DateTime @default(now())
 }

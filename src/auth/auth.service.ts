@@ -19,6 +19,9 @@ export class AuthService {
         this.logger.debug("||| Closing session...");
         const refreshToken = this.tokenSerice.getRefreshToken();
         this.logger.log("refreshToken: ", refreshToken);
+        if (!refreshToken) {
+            return;
+        }
         try {
             await this.tokenSerice.removeToken(refreshToken);
             this.tokenSerice.clearTokens();
