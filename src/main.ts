@@ -18,12 +18,12 @@ async function bootstrap() {
             "https://todo-proj-five.vercel.app",
         ],
         exposedHeaders: ["Authorization", "authorization"],
-        allowedHeaders: [
-            "Authorization",
-            "authorization",
-            "Content-Type",
-            "Origin",
-        ],
+        // allowedHeaders: [
+        //     "Authorization",
+        //     "authorization",
+        //     "Content-Type",
+        //     "Origin",
+        // ],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         credentials: true,
     });

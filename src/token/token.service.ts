@@ -134,7 +134,7 @@ export class TokenService {
         // } = this.decodeToken(refreshToken) as RefreshToken;
         const token = this.decodeToken(refreshToken) as RefreshToken;
         this.logger.log("token: ", token);
-        const uuid = token.sub.uuid;
+        const uuid = token?.sub?.uuid;
         const sessions = await this.userService.getUserSessions(uuid);
         const validatedSessions = await Promise.all(
             sessions.tokens.map(async (session) => {
