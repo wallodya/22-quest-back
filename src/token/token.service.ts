@@ -385,20 +385,28 @@ export class TokenService {
 
             this.logger.log("Hashed old token: ", hashedOldToken);
 
-            session = await this.prismaService.token.update({
-                where: {
-                    token_id: userAgentSession.token_id,
-                },
-                data: tokenData,
-            });
+            try {
+                session = await this.prismaService.token.update({
+                    where: {
+                        token_id: userAgentSession.token_id,
+                    },
+                    data: tokenData,
+                });
+            } catch (err) {
+                this.logger.warn(`Error while updating session`);
+            }
         } else {
             this.logger.verbose(
                 "User agent doesn't have open sessions\n",
                 "Generating new session with refresh token...",
             );
-            session = await this.prismaService.token.create({
-                data: tokenData,
-            });
+            try {
+                session = await this.prismaService.token.create({
+                    data: tokenData,
+                });
+            } catch (err) {
+                this.logger.warn(`Error while creating session`);
+            }
         }
 
         this.updateRemoveRTTimeout(newRefreshToken);
