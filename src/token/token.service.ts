@@ -46,7 +46,6 @@ export class TokenService {
             },
         });
 
-        this.logger.verbose("Setting Authorization header...");
         this.setAccessTokenHeaders(accessToken);
         return;
     }
@@ -128,14 +127,36 @@ export class TokenService {
     }
 
     async removeToken(refreshToken: string) {
-        this.logger.verbose("Removing token...");
-        // const {
-        //     sub: { uuid },
-        // } = this.decodeToken(refreshToken) as RefreshToken;
+        this.logger.verbose(`Removing refresh token(${refreshToken})...`);
+        if (!refreshToken) {
+            this.logger.log("Refresh token is empty");
+            return;
+        }
+
         const token = this.decodeToken(refreshToken) as RefreshToken;
         this.logger.log("token: ", token);
+
+        if (!token) {
+            this.logger.log("Refresh token wasn't decoded");
+            return;
+        }
+
         const uuid = token?.sub?.uuid;
+
+        if (!uuid) {
+            this.logger.log("Refresh token doesn't have uuid in sub");
+            return;
+        }
+
         const sessions = await this.userService.getUserSessions(uuid);
+
+        if (!sessions || !Array.isArray(sessions)) {
+            this.logger.log(
+                "Didn't find any user sessions while removing refresh token",
+            );
+            return;
+        }
+
         const validatedSessions = await Promise.all(
             sessions.tokens.map(async (session) => {
                 const isForDelete = await bcrypt.compare(
@@ -147,8 +168,22 @@ export class TokenService {
                     tokenId: session.token_id,
                 };
             }),
-        );
+        ).catch((err) => {
+            this.logger.warn(
+                `Error while looking for session with refresh token '${refreshToken}':`,
+            ),
+                this.logger.warn(err);
+        });
+
+        if (!validatedSessions || !Array.isArray(validatedSessions)) {
+            this.logger.log(
+                `Sessions with refresh token '${refreshToken}' were not found`,
+            );
+            return;
+        }
+
         try {
+            this.logger.log(`Deleting session with token '${refreshToken}'`);
             const { tokenId } = validatedSessions.find(
                 (session) => session.isForDelete,
             );
@@ -217,6 +252,7 @@ export class TokenService {
     }
 
     private setAccessTokenHeaders = (accessToken: string) => {
+        this.logger.verbose("Setting Authorization header...");
         const { headers: reqHeaders } = RequestContext.currentContext.req;
         const res = RequestContext.currentContext.res;
         reqHeaders[this.tokenConst.ACCESS_TOKEN_HEADER_NAME] =
@@ -295,10 +331,15 @@ export class TokenService {
         this.logger.verbose("Updating refresh token...");
 
         const newRefreshToken = tokenArgs.refreshToken;
-        const hashedToken = await bcrypt.hash(
-            newRefreshToken,
-            this.tokenConst.bcryptTokenHashSalt,
-        );
+        const hashedToken = await bcrypt
+            .hash(newRefreshToken, this.tokenConst.bcryptTokenHashSalt)
+            .catch((err) => {
+                this.logger.log(`Error while hashing new token`);
+                this.logger.log(err);
+            });
+        if (!hashedToken) {
+            return;
+        }
 
         const { oldRefreshToken, ...tokenData } = {
             ...tokenArgs,
@@ -332,10 +373,16 @@ export class TokenService {
                 userAgentSession,
                 "Updating the session with new refresh token...",
             );
-            const hashedOldToken = await bcrypt.hash(
-                oldRefreshToken,
-                this.tokenConst.bcryptTokenHashSalt,
-            );
+            const hashedOldToken = await bcrypt
+                .hash(oldRefreshToken, this.tokenConst.bcryptTokenHashSalt)
+                .catch((err) => {
+                    this.logger.log(`Error while hashing old refresh token`);
+                    this.logger.log(err);
+                });
+            if (!hashedOldToken) {
+                return;
+            }
+
             this.logger.log("Hashed old token: ", hashedOldToken);
 
             session = await this.prismaService.token.update({
