@@ -7,8 +7,8 @@ COPY --chown=node:node prisma ./prisma/
 RUN npm ci
 RUN npm install -g @nestjs/cli
 # RUN ls -la
-RUN npx prisma migrate deploy
 RUN npx prisma generate
+# RUN npx prisma migrate deploy
 COPY --chown=node:node . .
 CMD ["npm", "run", "start:dev"]
 EXPOSE 3000
