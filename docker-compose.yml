@@ -9,7 +9,7 @@ services:
       context: .
       target: app_dev
     volumes:
-      - ./:/var/www/app/src
+      - ./:/var/www/app
     ports:
       - "5000:3000"
     depends_on:
