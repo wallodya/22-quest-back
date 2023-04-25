@@ -29,7 +29,7 @@ services:
       - "80:3000"
     depends_on:
       - psql
-    command: ls -la
+    command: node dist/main
     env_file:
       - ./env/.development.env
 
