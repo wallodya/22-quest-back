@@ -2,8 +2,8 @@
 FROM node:18-alpine as app_dev
 WORKDIR /var/www/app
 LABEL com.docker.compose.container-number="1"
-COPY --chown=node:node package*.json ./
-COPY --chown=node:node prisma ./prisma/
+COPY --chown=node:node package*.json .
+COPY --chown=node:node prisma ./prisma
 RUN npm ci
 RUN npm install -g @nestjs/cli
 # RUN ls -la
