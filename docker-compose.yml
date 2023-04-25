@@ -6,7 +6,7 @@ services:
       - com.docker.compose.container-number=1
     build: 
       dockerfile: Dockerfile
-      context: .
+      context: ./app/
       target: app_dev
     volumes:
       - ./:/var/www/app
