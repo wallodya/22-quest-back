@@ -30,8 +30,8 @@ services:
     depends_on:
       - psql
     command: ls -la
-    # env_file:
-    #   - ./env/.development.env
+    env_file:
+      - ./env/.development.env
 
   psql:
     image: postgres:15
