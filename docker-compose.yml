@@ -21,7 +21,7 @@ services:
   app_prod:
     build: 
       dockerfile: Dockerfile
-      context: ./app
+      context: .
       target: app_prod
     volumes:
       - ./:/var/www/app
@@ -30,8 +30,8 @@ services:
     depends_on:
       - psql
     command: ls -la
-    env_file:
-      - ./env/.development.env
+    # env_file:
+    #   - ./env/.development.env
 
   psql:
     image: postgres:15
