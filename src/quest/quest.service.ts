@@ -1,5 +1,6 @@
 import {
     BadRequestException,
+    ConflictException,
     Injectable,
     Logger,
     ServiceUnavailableException,
@@ -224,6 +225,25 @@ export class QuestService {
             };
         } catch (err) {
             this.logger.warn("||| Couldn't create a quest");
+            const isQuestNameTaken =
+                !!(await this.prismaService.quest.findFirst({
+                    where: {
+                        AND: {
+                            user: {
+                                uuid: dto.user.uuid,
+                            },
+                            title: dto.title,
+                        },
+                    },
+                    select: {
+                        title: true,
+                    },
+                }));
+            if (isQuestNameTaken) {
+                throw new ConflictException(
+                    `User already has quest with title "${dto.title}"`,
+                );
+            }
             this.logger.warn(err);
             throw new ServiceUnavailableException("Couldn't create new quest");
         }

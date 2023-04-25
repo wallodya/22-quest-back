@@ -697,7 +697,7 @@ export class TaskService {
                         },
                     },
                 });
-            this.logger.warn("||| Types attached to a task");
+            this.logger.debug("||| Types attached to a task");
             const { task_id, difficulty, ...newTask } = task;
             return {
                 ...newTask,

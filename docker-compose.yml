@@ -2,9 +2,12 @@ version: '3.0'
 services:
   app:
     image: wallodya/todo_back
+    labels:
+      - com.docker.compose.container-number=1
     build: 
       dockerfile: Dockerfile
       context: .
+      target: app_dev
     volumes:
       - ./:/var/www/app
     ports:
@@ -14,10 +17,26 @@ services:
     command: npm run start:dev
     env_file:
       - ./env/.development.env
-    
+  
+  app_prod:
+    build: 
+      dockerfile: Dockerfile
+      context: ./app
+      target: app_prod
+    volumes:
+      - ./:/var/www/app
+    ports:
+      - "80:3000"
+    depends_on:
+      - psql
+    command: ls -la
+    env_file:
+      - ./env/.development.env
 
   psql:
     image: postgres:15
+    labels:
+      - com.docker.compose.container-number=2
     env_file:
       - ./env/.development.env 
     volumes:
