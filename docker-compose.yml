@@ -10,7 +10,6 @@ services:
       target: app_dev
     volumes:
       - ./:/var/www/app
-      - ./app/node_modules
     ports:
       - "5000:3000"
     depends_on:
