@@ -23,7 +23,7 @@ COPY prisma ./prisma/
 RUN npm ci
 RUN install -g @nestjs/cli
 # RUN npx prisma migrate deploy
-# RUN npx prisma generate
+RUN npx prisma generate
 COPY . .
 
 FROM app_prod as prod_build
@@ -31,4 +31,4 @@ WORKDIR /var/www/app
 LABEL com.docker.compose.container-number="3"
 RUN npm run build
 CMD ["npm", "run", "start:prod"]
-EXPOSE 80
+EXPOSE 3000
