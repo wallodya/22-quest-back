@@ -22,7 +22,7 @@ services:
     build: 
       dockerfile: Dockerfile
       context: .
-      target: app_prod
+      target: prod_build
     volumes:
       - ./:/var/www/app
     ports:
