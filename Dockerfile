@@ -21,7 +21,7 @@ LABEL com.docker.compose.container-number="2"
 COPY package*.json .
 COPY prisma ./prisma/
 RUN npm ci
-RUN install -g @nestjs/cli
+RUN npm install -g @nestjs/cli
 # RUN npx prisma migrate deploy
 RUN npx prisma generate
 COPY . .
