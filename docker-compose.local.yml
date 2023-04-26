@@ -1,7 +1,6 @@
 version: '3.0'
 services:
-
-  app_dev:
+  app_dev_local:
     image: wallodya/todo_back
     labels:
       - com.docker.compose.container-number=1
@@ -18,8 +17,10 @@ services:
     command: npm run start:dev
     env_file:
       - ./env/.development.env
+
   
-  app_prod:
+  
+  app_prod_local:
     build: 
       dockerfile: Dockerfile
       context: .
@@ -33,7 +34,6 @@ services:
     command: npm run start:prod
     env_file:
       - ./env/.development.env
-    restart: always
 
   psql:
     image: postgres:15

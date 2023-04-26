@@ -2,6 +2,11 @@
 /dist
 /node_modules
 
+# deploy
+www.souta.ru.crt
+www.souta.ru.key
+nginx.conf
+
 # Logs
 logs
 *.log
